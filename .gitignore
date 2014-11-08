@@ -1,0 +1,5 @@
+*.pyc
+*.swp
+*.jar
+fedora/fcrepo4-data/*
+search/data

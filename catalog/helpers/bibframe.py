@@ -212,10 +212,13 @@ class GraphIngester(object):
                 predicate=BF.authorizedAccessPoint)
 
             if authorizedAccessPoint is not None:
-                self.repository.insert(
-                    str(fcrepo_uri),
-                    "bf:authorizedAccessPoint",
-                    authorizedAccessPoint)
+                try:
+                    self.repository.insert(
+                        str(fcrepo_uri),
+                        "bf:authorizedAccessPoint",
+                        authorizedAccessPoint)
+                except:
+                    print("Error with {} with authorizedAccessPoint={}".format(subject, authorizedAccessPoint))
             bf_label = self.graph.value(
                 subject=subject,
                 predicate=BF.label)

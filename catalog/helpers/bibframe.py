@@ -1,22 +1,24 @@
-#-------------------------------------------------------------------------------
-# Name:        bibframe
-# Purpose:     Helper functions for ingesting BIBFRAME graphs into Fedora 4
-#              supported by Elastic Search
-#
-# Author:      Jeremy Nelson
-#
-# Created:     2014/11/02
-# Copyright:   (c) Jeremy Nelson 2014
-# Licence:     GPLv3
-#-------------------------------------------------------------------------------
+"""
+Name:        bibframe
+Purpose:     Helper functions for ingesting BIBFRAME graphs into Fedora 4
+             supported by Elastic Search
+
+Author:      Jeremy Nelson
+
+Created:     2014/11/02
+Copyright:   (c) Jeremy Nelson 2014
+Licence:     GPLv3
+"""
 __author__ = "Jeremy Nelson"
 
+import datetime
 import json
 import rdflib
 import sys
 import urllib.request
 from flask_fedora_commons import Repository
 from elasticsearch import Elasticsearch
+from string import Template
 
 CONTEXT = {
     "authz": "http://fedora.info/definitions/v4/authorization#",
@@ -51,6 +53,8 @@ for key, value in CONTEXT.items():
 
 
 def default_graph():
+    """Function generates a new rdflib Graph and sets all namespaces as part
+    of the graph's context"""
     new_graph = rdflib.Graph()
     for key, value in CONTEXT.items():
         new_graph.namespace_manager.bind(key, value)
@@ -83,6 +87,18 @@ class GraphIngester(object):
         self.repository = kwargs.get('repository', Repository())
 
     def dedup(self, term):
+        """Method takes a term and attempts to match it againest three
+        subject properties that have been indexed into Elastic search, returns
+        the first hit if found. This method may need further refinement to
+        provide the optimal deduplication for BIBFRAME resources.
+
+        Args:
+            term(string): A search term or phrase
+
+        Returns:
+            string URL of the top-hit for matching the term on a list of
+            properties
+        """
         if term is None:
             return
         search_result = self.elastic_search.search(
@@ -162,9 +178,21 @@ class GraphIngester(object):
             body=body)
 
     def ingest(self):
+        """Method ingests a BIBFRAME graph into Fedora 4 and Elastic search"""
+        start = datetime.datetime.utcnow()
+        print("Started ingestion at {}".format(start.isoformat()))
         self.initialize()
-        for subject_uri in self.bf2uris.values():
+        for i, subject_uri in enumerate(self.bf2uris.values()):
+            if not i%10 and i > 0:
+                print(".", end="")
+            if not i%100:
+                print(i, end="")
             self.process_subject(subject_uri)
+        end = datetime.datetime.utcnow()
+        print("Finished ingesting at {}, total time={} for {} subjects".format(
+            end.isoformat(),
+            (end-start) / 60.0),
+            i)
 
     def initialize(self):
         """Method iterates through all subjects in the BIBFRAME graph,
@@ -208,10 +236,34 @@ class GraphIngester(object):
             self.index(fcrepo_uri)
 
     def process_subject(self, subject):
+        """Method takes a subject URI and iteratees through the subject's
+        predicates and objects, saving them to a the subject's Fedora graph.
+        Blank nodes are expanded and saved as properties to the subject
+        graph as well. Finally, the graph is serialized as JSON-LD and updated
+        in the Elastic Search index.
+
+        Args:
+            subject(rdflib.URIRef): Subject URI
+        """
         new_graph = default_graph()
         if not str(subject) in self.bf2uris:
-            raise ValueError("Fedora URI not found {}".format(subject))
-        fedora_uri = self.bf2uris[str(subject)]
+            # Failed to find internal, now try SPARQL search
+            sparql_template = Template("""SELECT ?fedora_uri
+                WHERE {
+                    ?fedora_uri <http://www.w3.org/2002/07/owl#sameAs> <$subject>
+                }""")
+            raw_result = self.repository.sparql(
+                sparql_template.substitute(subject=str(subject)),
+                "application/sparql-results+json")
+            json_result = json.loads(raw_result)
+            if len(json_result['results']['bindings']) > 0:
+                first_row =json_result['results']['bindings'][0]
+                fedora_uri = first_row['fedora_url']['value']
+                self.bf2uris[str(subject)] = fedora_uri
+            else:
+                raise ValueError("Fedora URI not found {}".format(subject))
+        else:
+            fedora_uri = self.bf2uris[str(subject)]
         for predicate, object_ in self.graph.predicate_objects(subject=subject):
             if type(object_) == rdflib.BNode:
                 for b_predicate, b_object in self.graph.predicate_objects(

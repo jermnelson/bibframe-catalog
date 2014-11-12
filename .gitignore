@@ -2,5 +2,6 @@
 *.swp
 *.jar
 .DS*
+__pycache__
 fedora/fcrepo4-data/*
 search/data

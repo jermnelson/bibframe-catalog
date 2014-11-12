@@ -16,7 +16,7 @@ import json
 import rdflib
 import sys
 import urllib.request
-from flask_fedora_commons import Repository
+from flask_fedora_commons import build_prefixes, Repository
 from elasticsearch import Elasticsearch
 from string import Template
 
@@ -33,6 +33,7 @@ CONTEXT = {
     "mads": "http://www.loc.gov/mads/rdf/v1#",
     "mix": "http://www.jcp.org/jcr/mix/1.0",
     "mode": "http://www.modeshape.org/1.0",
+    "owl": "http://www.w3.org/2002/07/owl#",
     "nt": "http://www.jcp.org/jcr/nt/1.0",
     "premis": "http://www.loc.gov/premis/rdf/v1#",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
@@ -60,6 +61,31 @@ def default_graph():
         new_graph.namespace_manager.bind(key, value)
     return new_graph
 
+def create_sparql_insert_row(predicate, object_):
+    """Function creates a SPARQL update row based on a predicate and object
+
+    Args:
+        predicate(rdflib.Term): Predicate
+        object_(rdflib.Term): Object
+
+    Returns:
+        string
+    """
+    statement = "<> "
+    if str(p).startswith(str(RDF)):
+        statement += "rdf:" + p.split("#")[-1]
+    if str(p).startswith(str(BF)):
+        statement += "bf:" + p.split("#")[-1]
+    if str(p).startswith(str(MADS)):
+        statement += "mads:" + p.split("#")[-1]
+    if type(o) == rdflib.URIRef:
+        statement += " <" + str(o) + "> "
+    if type(o) == rdflib.Literal:
+        statement += """ "{}" """.format(o)
+    statement += ".\n"
+    return statement
+
+
 
 class GraphIngester(object):
     """Takes a BIBFRAME graph, extracts all subjects and creates an object in
@@ -69,7 +95,7 @@ class GraphIngester(object):
     To use
 
     >> ingester = GraphIngester(graph=bf_graph)
-    >> ingetser.initalize()
+    >> ingester.initalize()
     """
 
     def __init__(self, **kwargs):
@@ -127,6 +153,8 @@ class GraphIngester(object):
         Returns:
             boolean
         """
+        if str(subject) in self.bf2uris:
+            return True
         for predicate in [
             BF.authorizedAccessPoint,
             MADS.authoritativeLabel,
@@ -182,61 +210,37 @@ class GraphIngester(object):
         start = datetime.datetime.utcnow()
         print("Started ingestion at {}".format(start.isoformat()))
         self.initialize()
-        for i, subject_uri in enumerate(self.bf2uris.values()):
+        for i, subject_uri in enumerate(self.bf2uris.keys()):
             if not i%10 and i > 0:
                 print(".", end="")
             if not i%100:
                 print(i, end="")
             self.process_subject(subject_uri)
         end = datetime.datetime.utcnow()
-        print("Finished ingesting at {}, total time={} for {} subjects".format(
+        print("Finished ingesting at {}, total time={} minutes for {} subjects".format(
             end.isoformat(),
-            (end-start) / 60.0),
-            i)
+            (end-start).seconds / 60.0,
+            i))
 
     def initialize(self):
         """Method iterates through all subjects in the BIBFRAME graph,
         creates a Fedora 4 object for all non-BNode subjects, sets some
         default properties for each Fedora 4 object, before indexing into
         Elastic search"""
-        for subject in set([subject for subject in self.graph.subjects()]):
+        print("Initializing all subjects")
+        for i, subject in enumerate(
+            set([subject for subject in self.graph.subjects()])):
             if type(subject) == rdflib.BNode:
                 continue
             if self.exists(subject):
                 continue
-            fcrepo_uri = rdflib.URIRef(self.repository.create())
-            self.repository.insert(str(fcrepo_uri), "owl:sameAs", str(subject))
-            self.bf2uris[str(subject)] = fcrepo_uri
-            authorizedAccessPoint = self.graph.value(
-                subject=subject,
-                predicate=BF.authorizedAccessPoint)
+            self.stub(subject)
+            if not i%10 and i > 0:
+                print(".", end="")
+            if not i%100:
+                print(i, end="")
+        print("Finished adding all subjects to Fedora")
 
-            if authorizedAccessPoint is not None:
-                try:
-                    self.repository.insert(
-                        str(fcrepo_uri),
-                        "bf:authorizedAccessPoint",
-                        authorizedAccessPoint)
-                except:
-                    print("Error with {} with authorizedAccessPoint={}".format(subject, authorizedAccessPoint))
-            bf_label = self.graph.value(
-                subject=subject,
-                predicate=BF.label)
-            if bf_label is not None:
-                self.repository.insert(
-                    str(fcrepo_uri),
-                    "bf:label",
-                    bf_label)
-            authoritativeLabel = self.graph.value(
-                subject=subject,
-                predicate=MADS.authoritativeLabel)
-            if authoritativeLabel is not None:
-                self.repository.insert(
-                    str(fcrepo_uri),
-                    "mads:authoritativeLabel",
-                    authoritativeLabel)
-            fcrepo_graph = default_graph().parse(str(fcrepo_uri))
-            self.index(fcrepo_uri)
 
     def process_subject(self, subject):
         """Method takes a subject URI and iteratees through the subject's
@@ -249,55 +253,89 @@ class GraphIngester(object):
             subject(rdflib.URIRef): Subject URI
         """
         new_graph = default_graph()
-        if not str(subject) in self.bf2uris:
-            # Failed to find internal, now try SPARQL search
-            sparql_template = Template("""SELECT ?fedora_uri
-                WHERE {
-                    ?fedora_uri <http://www.w3.org/2002/07/owl#sameAs> <$subject>
-                }""")
-            raw_result = self.repository.sparql(
-                sparql_template.substitute(subject=str(subject)),
-                "application/sparql-results+json")
-            json_result = json.loads(raw_result)
-            if len(json_result['results']['bindings']) > 0:
-                first_row =json_result['results']['bindings'][0]
-                fedora_uri = first_row['fedora_url']['value']
-                self.bf2uris[str(subject)] = fedora_uri
-            else:
-                raise ValueError("Fedora URI not found {}".format(subject))
-        else:
-            fedora_uri = self.bf2uris[str(subject)]
+##        if not str(subject) in self.bf2uris:
+##            # Failed to find internal, now try SPARQL search
+##            sparql_template = Template("""SELECT ?fedora_uri
+##                WHERE {
+##                    ?fedora_uri <http://www.w3.org/2002/07/owl#sameAs> <$subject>
+##                }""")
+##            raw_result = self.repository.sparql(
+##                sparql_template.substitute(subject=str(subject)),
+##                "application/sparql-results+json")
+##            json_result = json.loads(raw_result)
+##            if len(json_result['results']['bindings']) > 0:
+##                first_row =json_result['results']['bindings'][0]
+##                fedora_uri = first_row['fedora_url']['value']
+##                self.bf2uris[str(subject)] = fedora_uri
+##            else:
+##                raise ValueError("Fedora URI not found {}".format(subject))
+##        else:
+        fedora_uri = self.bf2uris[str(subject)]
+        sparql = build_prefixes(self.repository.namespaces)
+        sparql += "\nINSERT DATA {\n"
         for predicate, object_ in self.graph.predicate_objects(subject=subject):
             if type(object_) == rdflib.BNode:
                 for b_predicate, b_object in self.graph.predicate_objects(
                     subject=object_):
-                        if str(b_object) in bf2uris:
-                            new_graph.add(
-                                (fedora_uri,
-                                b_predicate,
-                                bf2uris.get(str(b_object))))
-                        else:
-                            new_graph.add(
-                                (fedora_uri,
-                                b_predicate,
-                                b_object))
+                        sparql += create_sparql_insert_row(
+                            b_predicate,
+                            b_object)
             else:
-                if str(object_) in self.bf2uris:
-                    new_graph.add(
-                                (fedora_uri,
+                if str(object_) in self.bf2uris:\
+                    sparql += create_sparql_insert_row(
                                 predicate,
-                                self.bf2uris.get(str(object_))))
+                                self.bf2uris.get(str(object_)))
                 else:
-                    new_graph.add(
-                                (fedora_uri,
-                                predicate,
-                                object_))
+                    sparql += create_sparql_insert_row(
+                        predicate, object_)
+        sparql += "\n}"
         update_fedora_request = urllib.request.Request(
             str(fedora_uri),
-            method='PUT',
-            data=new_graph.serialize(format='turtle'),
-            headers={"Content-type": "text/turtle"})
-        self.index(fedora_uri)
+            method='PATCH',
+            data=sparql.serialize(),
+            headers={"Content-type": "application/sparql-update"})
+        result = urllib.urlopen(update_fedora_request)
+        self.update_index(fedora_uri)
+
+    def stub(self, subject):
+        """Method creates a Fedora Object BIBFRAME stub with minimal
+
+        Args:
+            subject(rdflib.URIRef): Subject URI
+
+        Returns:
+            string: Fedora URI
+        """
+        fcrepo_uri = rdflib.URIRef(self.repository.create())
+        self.bf2uris[str(subject)] = fcrepo_uri
+        sparql = build_prefixes(self.repository.namespaces)
+        sparql += "\nINSERT DATA {\n"
+        sparql += "<> owl:sameAs <" + str(subject) + "> .\n"
+        for predicate in [
+            BF.authorizedAccessPoint,
+            BF.label,
+            MADS.authoritativeLabel]:
+                obj_value = self.graph.value(
+                    subject=subject,
+                    predicate=predicate)
+                if obj_value is not None:
+                    sparql += create_sparql_insert_row(predicate, obj_value)
+        for type_of in self.graph.objects(
+            subject=subject,
+            predicate=rdflib.RDF.type):
+                if str(type_of).startswith('http://bibframe'):
+                    sparql += "<> rdf:type <" + str(type_of) + "> .\n"
+        sparql += "}"
+        update_request = urllib.request.Request(
+            str(fcrepo_uri),
+            data=sparql.encode(),
+            method='PATCH',
+            headers={'Content-Type': 'application/sparql-update'})
+        result = urllib.request.urlopen(update_request)
+        self.index(fcrepo_uri)
+        return fcrepo_uri
+
+
 
 def main():
     pass

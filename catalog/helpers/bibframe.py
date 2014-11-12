@@ -72,16 +72,20 @@ def create_sparql_insert_row(predicate, object_):
         string
     """
     statement = "<> "
-    if str(p).startswith(str(RDF)):
-        statement += "rdf:" + p.split("#")[-1]
-    if str(p).startswith(str(BF)):
-        statement += "bf:" + p.split("#")[-1]
-    if str(p).startswith(str(MADS)):
-        statement += "mads:" + p.split("#")[-1]
-    if type(o) == rdflib.URIRef:
-        statement += " <" + str(o) + "> "
-    if type(o) == rdflib.Literal:
-        statement += """ "{}" """.format(o)
+    if str(predicate).startswith(str(RDF)):
+        statement += "rdf:" + predicate.split("#")[-1]
+    if str(predicate).startswith(str(BF)):
+        statement += "bf:" + predicate.split("/")[-1]
+    if str(predicate).startswith(str(MADS)):
+        statement += "mads:" + predicate.split("#")[-1]
+    if type(object_) == rdflib.URIRef:
+        statement += " <" + str(object_) + "> "
+    if type(object_) == rdflib.Literal:
+        if str(object_).find('"') > -1:
+            value = """ '''{}''' """.format(object_)
+        else:
+            value = """ "{}" """.format(object_)
+        statement += value
     statement += ".\n"
     return statement
 
@@ -292,10 +296,10 @@ class GraphIngester(object):
         update_fedora_request = urllib.request.Request(
             str(fedora_uri),
             method='PATCH',
-            data=sparql.serialize(),
+            data=sparql.encode(),
             headers={"Content-type": "application/sparql-update"})
-        result = urllib.urlopen(update_fedora_request)
-        self.update_index(fedora_uri)
+        result = urllib.request.urlopen(update_fedora_request)
+        self.index(fedora_uri)
 
     def stub(self, subject):
         """Method creates a Fedora Object BIBFRAME stub with minimal
@@ -315,10 +319,8 @@ class GraphIngester(object):
             BF.authorizedAccessPoint,
             BF.label,
             MADS.authoritativeLabel]:
-                obj_value = self.graph.value(
-                    subject=subject,
-                    predicate=predicate)
-                if obj_value is not None:
+                for obj_value in self.graph.objects(subject=subject,
+                                                    predicate=predicate):
                     sparql += create_sparql_insert_row(predicate, obj_value)
         for type_of in self.graph.objects(
             subject=subject,
@@ -331,8 +333,12 @@ class GraphIngester(object):
             data=sparql.encode(),
             method='PATCH',
             headers={'Content-Type': 'application/sparql-update'})
-        result = urllib.request.urlopen(update_request)
-        self.index(fcrepo_uri)
+        try:
+            result = urllib.request.urlopen(update_request)
+            self.index(fcrepo_uri)
+        except urllib.request.HTTPError:
+            print("Error with {}, SPARQL:\n{}".format(fcrepo_uri, sparql))
+            raise ValueError(sparql)
         return fcrepo_uri
 
 

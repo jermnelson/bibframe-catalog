@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link href='http://fonts.googleapis.com/css?family=Raleway:400,500' rel='stylesheet' type='text/css'>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block head_title %}BIBFRAME Access and Discovery Catalog{% endblock %}</title>
+    {% block css %}
+    <style>
+      body {
+        font-family: 'Raleway', sans-serif;
+      }
+    </style>
+    {% endblock %}
+    {% block more_css %}{% endblock %}
+
+  </head>
+  <body>
+   {% block body %}
+    <h1>BIBFRAME Access and Discovery Catalog</h1>
+    <p>Placeholder Main page</p>
+    <h2>Elastic Search Information</h2>
+    <table style="border: 1px solid black">
+     {% for key, val in search.info().items() %}
+     {% if key == 'version' %}
+      {% for ver_key, ver_val in val.items() %}
+      <tr>
+        <th>{{ ver_key|title }}</th>
+        <td>{{ ver_val }}</td>
+      </tr>
+      {% endfor %}
+     {% else %}
+     <tr>
+       <th>{{ key|title }}</th>
+       <td>{{ val }}</td>
+     </tr>
+     {% endif %}
+     {% endfor %}
+     <tr>
+       <th>Total Resources:</th>
+       <td>{{ search.count().count }}</td>
+     </tr>
+    </table>
+   {% endblock %}
+  </body>
+</html>

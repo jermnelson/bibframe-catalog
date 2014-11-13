@@ -53,14 +53,6 @@ for key, value in CONTEXT.items():
         rdflib.Namespace(value))
 
 
-def default_graph():
-    """Function generates a new rdflib Graph and sets all namespaces as part
-    of the graph's context"""
-    new_graph = rdflib.Graph()
-    for key, value in CONTEXT.items():
-        new_graph.namespace_manager.bind(key, value)
-    return new_graph
-
 def create_sparql_insert_row(predicate, object_):
     """Function creates a SPARQL update row based on a predicate and object
 
@@ -88,6 +80,66 @@ def create_sparql_insert_row(predicate, object_):
         statement += value
     statement += ".\n"
     return statement
+
+def default_graph():
+    """Function generates a new rdflib Graph and sets all namespaces as part
+    of the graph's context"""
+    new_graph = rdflib.Graph()
+    for key, value in CONTEXT.items():
+        new_graph.namespace_manager.bind(key, value)
+    return new_graph
+
+def generate_body(fedora_uri):
+    """Function takes a Fedora URI, filters the Fedora graph and returns a dict
+    for indexing into Elastic search
+
+    Args:
+        fedora_uri(string): Fedora URI
+
+    Returns:
+        dict: Dictionary of values filtered for Elastic Search indexing
+    """
+    def get_id_or_value(value):
+        if '@value' in value:
+            return value.get('@value')
+        elif '@id' in value:
+            return value.get('@id')
+        return value
+    def set_or_expand(key, value):
+        if key in body:
+            if type(body[key]) is list:
+                body[key].append(get_id_or_value(value))
+            else:
+                body[key] = [body[key], get_id_or_value(value)]
+        else:
+            body[key] = get_id_or_value(value)
+    graph = default_graph()
+    graph.parse(fedora_uri)
+    body = dict()
+    bf_json = json.loads(
+        graph.serialize(
+            format='json-ld',
+            context=CONTEXT).decode())
+    if '@graph' in bf_json:
+        for graph in bf_json.get('@graph'):
+            # Index only those graphs that have been created in the
+            # repository
+            if 'fcrepo:created' in graph:
+                for key, val in graph.items():
+                    if key in [
+                        'fcrepo:lastModified',
+                        'fcrepo:created',
+                        'fcrepo:uuid']:
+                            set_or_expand(key, val)
+                    elif key.startswith('@type'):
+                        for name in value:
+                            if name.startswith('http://bibframe'):
+                                set_or_expand('type', name)
+                    elif key.startswith('@id'):
+                        set_or_expand('fcrepo:hasLocation', val)
+                    elif not key.startswith('fcrepo'):
+                        set_or_expand(key, val)
+    return body
 
 
 
@@ -141,9 +193,9 @@ class GraphIngester(object):
                         "fields": [
                             "bf:authorizedAccessPoint",
                             "mads:authoritativeLabel",
-                            "bf:label"]}}})
+                            "bf:titleValue"]}}})
         if search_result.get('hits').get('total') > 0:
-            top_hit = search_result['hits']['hits'][0]['_source']['owl:sameAs']
+            top_hit = search_result['hits']['hits'][0]['_source']['fcrepo:hasLocation']
             return rdflib.URIRef(top_hit)
 
 
@@ -161,14 +213,15 @@ class GraphIngester(object):
             return True
         for predicate in [
             BF.authorizedAccessPoint,
-            MADS.authoritativeLabel,
-            BF.label]:
-            object_value = self.graph.value(
+            MADS.authoritativeLabel]:
+            objects = self.graph.objects(
                 subject=subject,
                 predicate=predicate)
-            if object_value is not None:
+            for object_value in objects:
                 result = self.dedup(str(object_value))
                 if result is not None:
+                    print("Result is {}".format(result))
+                    self.repository.insert(result, "owl:sameAs", str(subject))
                     self.bf2uris[str(subject)] = result
                     return True
         return False
@@ -192,33 +245,33 @@ class GraphIngester(object):
             'Work',
             'Annotation',
             'Authority',
+            'Person',
+            'Organization',
             'Instance']:
                 if getattr(BF, class_name) in subject_types:
                     doc_type = class_name.split('/')[-1]
-        body = json.loads(fcrepo_graph.serialize(
-                format='json-ld',
-                context=CONTEXT).decode())
-        if '@context' in body:
-            body.pop('@context')
-        body['owl:sameAs'] = str(fcrepo_uri)
+        body = generate_body(fcrepo_uri)
         self.elastic_search.index(
             index='bibframe',
             doc_type=doc_type,
             id=str(fcrepo_graph.value(
                     subject=fcrepo_uri,
                     predicate=FCREPO.uuid)),
-            body=body)
+            body=generate_body(fcrepo_uri))
 
     def ingest(self):
         """Method ingests a BIBFRAME graph into Fedora 4 and Elastic search"""
         start = datetime.datetime.utcnow()
         print("Started ingestion at {}".format(start.isoformat()))
         self.initialize()
-        for i, subject_uri in enumerate(self.bf2uris.keys()):
+        for i, subject_uri in enumerate(
+            set([subject for subject in self.graph.subjects()])):
             if not i%10 and i > 0:
                 print(".", end="")
             if not i%100:
                 print(i, end="")
+            if type(subject_uri) == rdflib.BNode:
+                continue
             self.process_subject(subject_uri)
         end = datetime.datetime.utcnow()
         print("Finished ingesting at {}, total time={} minutes for {} subjects".format(
@@ -232,17 +285,19 @@ class GraphIngester(object):
         default properties for each Fedora 4 object, before indexing into
         Elastic search"""
         print("Initializing all subjects")
+        if not self.elastic_search.indices.exists('bibframe'):
+            self.elastic_search.indices.create('bibframe')
         for i, subject in enumerate(
             set([subject for subject in self.graph.subjects()])):
+            if not i%10 and i > 0:
+                print(".", end="")
+            if not i%100:
+                print(i, end="")
             if type(subject) == rdflib.BNode:
                 continue
             if self.exists(subject):
                 continue
             self.stub(subject)
-            if not i%10 and i > 0:
-                print(".", end="")
-            if not i%100:
-                print(i, end="")
         print("Finished adding all subjects to Fedora")
 
 
@@ -257,23 +312,6 @@ class GraphIngester(object):
             subject(rdflib.URIRef): Subject URI
         """
         new_graph = default_graph()
-##        if not str(subject) in self.bf2uris:
-##            # Failed to find internal, now try SPARQL search
-##            sparql_template = Template("""SELECT ?fedora_uri
-##                WHERE {
-##                    ?fedora_uri <http://www.w3.org/2002/07/owl#sameAs> <$subject>
-##                }""")
-##            raw_result = self.repository.sparql(
-##                sparql_template.substitute(subject=str(subject)),
-##                "application/sparql-results+json")
-##            json_result = json.loads(raw_result)
-##            if len(json_result['results']['bindings']) > 0:
-##                first_row =json_result['results']['bindings'][0]
-##                fedora_uri = first_row['fedora_url']['value']
-##                self.bf2uris[str(subject)] = fedora_uri
-##            else:
-##                raise ValueError("Fedora URI not found {}".format(subject))
-##        else:
         fedora_uri = self.bf2uris[str(subject)]
         sparql = build_prefixes(self.repository.namespaces)
         sparql += "\nINSERT DATA {\n"
@@ -293,6 +331,7 @@ class GraphIngester(object):
                     sparql += create_sparql_insert_row(
                         predicate, object_)
         sparql += "\n}"
+        print(sparql)
         update_fedora_request = urllib.request.Request(
             str(fedora_uri),
             method='PATCH',
@@ -317,7 +356,7 @@ class GraphIngester(object):
         sparql += "<> owl:sameAs <" + str(subject) + "> .\n"
         for predicate in [
             BF.authorizedAccessPoint,
-            BF.label,
+            BF.titleValue,
             MADS.authoritativeLabel]:
                 for obj_value in self.graph.objects(subject=subject,
                                                     predicate=predicate):

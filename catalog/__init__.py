@@ -16,7 +16,6 @@ __license__ = "GPLv3"
 from flask import abort, Flask, jsonify, render_template
 from flask.ext.elastic import Elastic
 import sys
-sys.path.append("C:\\Users\\jernelson\\Development\\flask-fedora")
 from flask_fedora_commons import Repository
 
 app = Flask(__name__)

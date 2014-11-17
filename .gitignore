@@ -4,4 +4,8 @@
 .DS*
 __pycache__
 fedora/fcrepo4-data/*
+fedora/*.war
 search/data
+search/bin
+search/lib
+search/logs

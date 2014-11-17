@@ -1,3 +1,4 @@
+#!/home/jermnelson_gmail_com/bf-dev-env/bin/python
 """
 Name:        runserver
 Purpose:     Runs BIBFRAME Access and Discovery Catalog
@@ -14,7 +15,7 @@ except ImportError:
     from __init__ import app
 
 def main():
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', port=80, debug=True)
 
 if __name__ == '__main__':
     main()

@@ -20,6 +20,21 @@
    {% block body %}
     <h1>BIBFRAME Access and Discovery Catalog</h1>
     <p>Placeholder Main page</p>
+    <div> 
+      <form method='POST' action='/search'>
+        <select name="search_type">
+          <option>Keyword</option>
+          <option>Work</option> 
+          <option>Instance</option> 
+          <option>Place</option> 
+          <option>Person</option> 
+
+        </select>
+        <input type="text" name="phrase">
+        <input type="submit" value="Run search"></input>
+      </form>
+    </div>
+    <div style="float: left; padding-right: 1em;">
     <h2>Elastic Search Information</h2>
     <table style="border: 1px solid black">
      {% for key, val in search.info().items() %}
@@ -42,6 +57,26 @@
        <td>{{ search.count().count }}</td>
      </tr>
     </table>
+    </div>
+    <div>
+     <h2>Fedora 4 Information</h2>
+    <table style="border: 1px solid black">
+     <tr>
+       <th>Base URL</th>
+       <td>{{ repository.base_url }}</td>
+     </tr>
+     {#
+     {% set repo_info = repository.read(repository.base_url + '/rest') %}
+     {% for p,o in repo_info.predicate_objects() %}
+      <tr>
+        <td>{{ p }}</td>
+        <td>{{ o }}</td>
+      </tr>
+     {% endfor %}
+     #}
+    </table>
+    </div>
    {% endblock %}
+
   </body>
 </html>

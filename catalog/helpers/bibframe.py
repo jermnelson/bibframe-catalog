@@ -66,10 +66,12 @@ def create_sparql_insert_row(predicate, object_):
     statement = "<> "
     if str(predicate).startswith(str(RDF)):
         statement += "rdf:" + predicate.split("#")[-1]
-    if str(predicate).startswith(str(BF)):
+    elif str(predicate).startswith(str(BF)):
         statement += "bf:" + predicate.split("/")[-1]
-    if str(predicate).startswith(str(MADS)):
+    elif str(predicate).startswith(str(MADS)):
         statement += "mads:" + predicate.split("#")[-1]
+    else:
+        statement += "<" + str(predicate) + ">"
     if type(object_) == rdflib.URIRef:
         statement += " <" + str(object_) + "> "
     if type(object_) == rdflib.Literal:
@@ -106,13 +108,13 @@ def generate_body(fedora_uri):
             return value.get('@id')
         return value
     def set_or_expand(key, value):
-        if key in body:
-            if type(body[key]) is list:
-                body[key].append(get_id_or_value(value))
-            else:
-                body[key] = [body[key], get_id_or_value(value)]
+        if key not in body:
+            body[key] = []
+        if type(value) == list:
+            for row in value:
+                body[key].append(get_id_or_value(row))
         else:
-            body[key] = get_id_or_value(value)
+            body[key] = [get_id_or_value(value),]
     graph = default_graph()
     graph.parse(fedora_uri)
     body = dict()
@@ -132,16 +134,44 @@ def generate_body(fedora_uri):
                         'fcrepo:uuid']:
                             set_or_expand(key, val)
                     elif key.startswith('@type'):
-                        for name in value:
-                            if name.startswith('http://bibframe'):
+                        for name in val:
+                            if name.startswith('bf:'):
                                 set_or_expand('type', name)
                     elif key.startswith('@id'):
                         set_or_expand('fcrepo:hasLocation', val)
-                    elif not key.startswith('fcrepo'):
+                    elif not key.startswith('fcrepo') and not key.startswith('owl'):
                         set_or_expand(key, val)
     return body
 
+def guess_search_doc_type(graph, fcrepo_uri):
+    """Function takes a graph and attempts to guess the Doc type for ingestion
+    into Elastic Search
 
+    Args:
+        graph(rdflib.Graph): RDF Graph of Fedora Object
+        subject_uri(rdlib.URIRef): Subject of the RDF Graph
+
+    Returns:
+        string: Doc type of subject
+    """
+    doc_type = 'Resource'
+    subject_types = [obj for obj in graph.objects(
+                subject=fcrepo_uri,
+                predicate=rdflib.RDF.type)]
+    for class_name in [
+        'Work',
+        'Annotation',
+        'Authority',
+        'Person',
+        'Place',
+        'Provider',
+        'Title',
+        'Topic',
+        'Organization',
+        'Instance']:
+            if getattr(BF, class_name) in subject_types:
+                doc_type = class_name
+    return doc_type
 
 class GraphIngester(object):
     """Takes a BIBFRAME graph, extracts all subjects and creates an object in
@@ -168,7 +198,7 @@ class GraphIngester(object):
         self.graph = kwargs.get('graph', default_graph())
         self.repository = kwargs.get('repository', Repository())
 
-    def dedup(self, term):
+    def dedup(self, term, doc_type='Resource'):
         """Method takes a term and attempts to match it againest three
         subject properties that have been indexed into Elastic search, returns
         the first hit if found. This method may need further refinement to
@@ -176,6 +206,7 @@ class GraphIngester(object):
 
         Args:
             term(string): A search term or phrase
+            doc_type(string): Doc type to restrict search, defaults to Resource
 
         Returns:
             string URL of the top-hit for matching the term on a list of
@@ -185,6 +216,7 @@ class GraphIngester(object):
             return
         search_result = self.elastic_search.search(
             index="bibframe",
+            doc_type=doc_type,
             body={
                 "query": {
                     "multi_match": {
@@ -193,9 +225,10 @@ class GraphIngester(object):
                         "fields": [
                             "bf:authorizedAccessPoint",
                             "mads:authoritativeLabel",
+                            "bf:label",
                             "bf:titleValue"]}}})
         if search_result.get('hits').get('total') > 0:
-            top_hit = search_result['hits']['hits'][0]['_source']['fcrepo:hasLocation']
+            top_hit = search_result['hits']['hits'][0]['_source']['fcrepo:hasLocation'][0]
             return rdflib.URIRef(top_hit)
 
 
@@ -211,16 +244,18 @@ class GraphIngester(object):
         """
         if str(subject) in self.bf2uris:
             return True
+        doc_type = guess_search_doc_type(self.graph, subject)
         for predicate in [
             BF.authorizedAccessPoint,
-            MADS.authoritativeLabel]:
+            BF.label,
+            MADS.authoritativeLabel,
+            BF.titleValue]:
             objects = self.graph.objects(
                 subject=subject,
                 predicate=predicate)
             for object_value in objects:
-                result = self.dedup(str(object_value))
+                result = self.dedup(str(object_value), doc_type)
                 if result is not None:
-                    print("Result is {}".format(result))
                     self.repository.insert(result, "owl:sameAs", str(subject))
                     self.bf2uris[str(subject)] = result
                     return True
@@ -237,27 +272,16 @@ class GraphIngester(object):
 
         """
         fcrepo_graph = default_graph().parse(str(fcrepo_uri))
-        doc_type = 'Resource'
-        subject_types = [obj for obj in self.graph.objects(
-                subject=fcrepo_uri,
-                predicate=rdflib.RDF.type)]
-        for class_name in [
-            'Work',
-            'Annotation',
-            'Authority',
-            'Person',
-            'Organization',
-            'Instance']:
-                if getattr(BF, class_name) in subject_types:
-                    doc_type = class_name.split('/')[-1]
+        doc_id = str(fcrepo_graph.value(
+                    subject=fcrepo_uri,
+                    predicate=FCREPO.uuid))
+        doc_type = guess_search_doc_type(fcrepo_graph, fcrepo_uri)
         body = generate_body(fcrepo_uri)
         self.elastic_search.index(
             index='bibframe',
             doc_type=doc_type,
-            id=str(fcrepo_graph.value(
-                    subject=fcrepo_uri,
-                    predicate=FCREPO.uuid)),
-            body=generate_body(fcrepo_uri))
+            id=doc_id,
+            body=body)
 
     def ingest(self):
         """Method ingests a BIBFRAME graph into Fedora 4 and Elastic search"""
@@ -293,8 +317,8 @@ class GraphIngester(object):
                 print(".", end="")
             if not i%100:
                 print(i, end="")
-            if type(subject) == rdflib.BNode:
-                continue
+##            if type(subject) == rdflib.BNode:
+##                continue
             if self.exists(subject):
                 continue
             self.stub(subject)
@@ -311,7 +335,6 @@ class GraphIngester(object):
         Args:
             subject(rdflib.URIRef): Subject URI
         """
-        new_graph = default_graph()
         fedora_uri = self.bf2uris[str(subject)]
         sparql = build_prefixes(self.repository.namespaces)
         sparql += "\nINSERT DATA {\n"
@@ -319,6 +342,8 @@ class GraphIngester(object):
             if type(object_) == rdflib.BNode:
                 for b_predicate, b_object in self.graph.predicate_objects(
                     subject=object_):
+                        if str(b_object) in self.bf2uris:
+                            b_object = self.bf2uris.get(str(b_object))
                         sparql += create_sparql_insert_row(
                             b_predicate,
                             b_object)
@@ -331,7 +356,6 @@ class GraphIngester(object):
                     sparql += create_sparql_insert_row(
                         predicate, object_)
         sparql += "\n}"
-        print(sparql)
         update_fedora_request = urllib.request.Request(
             str(fedora_uri),
             method='PATCH',
@@ -353,7 +377,10 @@ class GraphIngester(object):
         self.bf2uris[str(subject)] = fcrepo_uri
         sparql = build_prefixes(self.repository.namespaces)
         sparql += "\nINSERT DATA {\n"
-        sparql += "<> owl:sameAs <" + str(subject) + "> .\n"
+        if type(subject) == rdflib.URIRef:
+            sparql += "<> owl:sameAs <" + str(subject) + "> .\n"
+        elif type(subject) == rdflib.BNode:
+            sparql += """<> owl:sameAs "{}" .\n""".format(subject)
         for predicate in [
             BF.authorizedAccessPoint,
             BF.titleValue,

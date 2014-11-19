@@ -190,13 +190,15 @@ class GraphIngester(object):
         Args:
             es(elasticsearch.ElasticSearch): Instance of Elasticsearch
             graph(rdflib.Graph): BIBFRAM RDF Graph
-            repo(flask_fedora_commons.Repository): Fedora Commons Repository
+            repository(flask_fedora_commons.Repository): Fedora Commons Repository
+            quiet(boolean): If False, prints status of ingestion
 
         """
         self.bf2uris = {}
         self.elastic_search = kwargs.get('elastic_search', Elasticsearch())
         self.graph = kwargs.get('graph', default_graph())
         self.repository = kwargs.get('repository', Repository())
+        self.quiet = kwargs.get('quiet', False)
 
     def dedup(self, term, doc_type='Resource'):
         """Method takes a term and attempts to match it againest three
@@ -286,43 +288,51 @@ class GraphIngester(object):
     def ingest(self):
         """Method ingests a BIBFRAME graph into Fedora 4 and Elastic search"""
         start = datetime.datetime.utcnow()
-        print("Started ingestion at {}".format(start.isoformat()))
+        if self.quiet is False:
+            print("Started ingestion at {}".format(start.isoformat()))
         self.initialize()
         for i, subject_uri in enumerate(
             set([subject for subject in self.graph.subjects()])):
             if not i%10 and i > 0:
-                print(".", end="")
+                if self.quiet is False:
+                    print(".", end="")
             if not i%100:
-                print(i, end="")
+                if self.quiet is False:
+                    print(i, end="")
             if type(subject_uri) == rdflib.BNode:
                 continue
             self.process_subject(subject_uri)
         end = datetime.datetime.utcnow()
-        print("Finished ingesting at {}, total time={} minutes for {} subjects".format(
-            end.isoformat(),
-            (end-start).seconds / 60.0,
-            i))
+        if self.quiet is False:
+            print("Finished ingesting at {}, total time={} minutes for {} subjects".format(
+                end.isoformat(),
+                (end-start).seconds / 60.0,
+                i))
 
     def initialize(self):
         """Method iterates through all subjects in the BIBFRAME graph,
         creates a Fedora 4 object for all non-BNode subjects, sets some
         default properties for each Fedora 4 object, before indexing into
         Elastic search"""
-        print("Initializing all subjects")
+        if self.quiet is False:
+            print("Initializing all subjects")
         if not self.elastic_search.indices.exists('bibframe'):
             self.elastic_search.indices.create('bibframe')
         for i, subject in enumerate(
             set([subject for subject in self.graph.subjects()])):
             if not i%10 and i > 0:
-                print(".", end="")
+                if self.quiet is False:
+                    print(".", end="")
             if not i%100:
-                print(i, end="")
+                if self.quiet is False:
+                    print(i, end="")
 ##            if type(subject) == rdflib.BNode:
 ##                continue
             if self.exists(subject):
                 continue
             self.stub(subject)
-        print("Finished adding all subjects to Fedora")
+        if self.quiet is False:
+            print("Finished adding all subjects to Fedora")
 
 
     def process_subject(self, subject):

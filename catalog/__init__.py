@@ -26,7 +26,6 @@ es_search = Elastic(app)
 @app.route('/search', methods=['POST', 'GET'])
 def search():
     """Search view for the application"""
-    print(request.args)
     search_type = request.form.get('search_type', 'kw')
     phrase = request.form.get('phrase')
     if search_type.startswith("Keyw"):

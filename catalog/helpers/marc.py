@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+"""
 # Name:        marc
 # Purpose:     MARC21 module includes helper classes and functions for using
 #              MARC 21 with Fedora 4 and Elasticsearch
@@ -8,7 +8,7 @@
 # Created:     2014/11/07
 # Copyright:   (c) Jeremy Nelson 2014
 # Licence:     GPLv3
-#-------------------------------------------------------------------------------
+"""
 __author__ = "Jeremy Nelson"
 
 import pymarc
@@ -16,16 +16,26 @@ import rdflib
 import urllib.request
 from catalog.helpers.bibframe import FCREPO
 
-class MARCIngester(object):
+class RecordIngester(object):
     """Class takes a MARC21 or MARC XML file, ingests into Fedora 4 repository
     and into Elastic search"""
 
-    def __init__(self, **kwargs):
-        self.elastic_search = kwargs.get('elastic_search')
-        self.record = kwargs.get('record')
-        self.repository = kwargs.get('repository')
+    def __init__(
+            self,
+            record,
+            elastic_search,
+            repository
+            ):
+        """Initializes RecordIngester class
 
-
+        Args:
+            record: A MARC21 or MARC XML file
+            elastic_search: Elasticsearch instance
+            repository: Flask Fedora Commons Repository instance
+        """
+        self.elastic_search = elastic_search
+        self.record = record
+        self.repository = repository
 
     def dedup(self, ils='III'):
         if ils.startswith('III'):
@@ -44,6 +54,31 @@ class MARCIngester(object):
                 first_hit = existing_result['hits']['hits'][0]
                 return first_hit['_source']['owl:sameAs']
 
+    def index(self, marc_meta_url):
+        marc_graph = rdflib.Graph().parse(marc_meta_url)
+        marc_uri = rdflib.URIRef(marc_meta_url)
+        bib_number = str(marc_graph.value(
+            subject=marc_uri,
+            predicate=rdflib.RDFS.label)
+        )
+        created_on = str(marc_graph.value(
+            subject=marc_uri,
+            predicate=FCREPO.created)
+        )
+        marc_uuid = str(marc_graph.value(
+            subject=marc_uri,
+            predicate=FCREPO.uuid)
+        )
+        marc_body = {
+            "owl:sameAs": marc_meta_url,
+            "rdfs:label": bib_number,
+            "fcrepo:created": created_on}
+        self.elastic_search.index(
+            index='marc',
+            doc_type='marc21',
+            id=marc_uuid,
+            body=marc_body)
+
     def ingest(self, ils):
         existing_marc = self.dedup(ils)
         if existing_marc is not None:
@@ -58,8 +93,8 @@ class MARCIngester(object):
             method='POST',
             data=marc21)
         result = urllib.request.urlopen(create_request)
-        marc_content_uri = result.read().decode()
-        marc_uri = marc_content_uri + '/fcr:metadata'
+        marc_uri = result.read().decode()
+        marc_meta_uri = "/".join([marc_uri, "fcr:metadata"])
         # III specific BIB Number
         if ils.startswith("III"):
             bib_number = self.record['907']['a'][1:-1]
@@ -67,23 +102,12 @@ class MARCIngester(object):
         else:
             # Use 001 as rdfs:label for MARC record
             bib_number = self.record['001'].data
-        self.repository.insert(marc_uri, 'rdfs:label', bib_number)
-        if self.elastic_search is not None:
-            marc_graph = rdflib.Graph().parse(marc_uri)
-            marc_body = {
-                "owl:sameAs": marc_uri,
-                "rdfs:label": bib_number,
-                "fcrepo:created": marc_graph.value(
-                                    subject=rdflib.URIRef(marc_uri),
-                                    predicate=FCREPO.created)}
-            self.elastic_search.index(
-                index='marc',
-                doc_type='marc21',
-                id=str(marc_graph.value(
-                    subject=rdflib.URIRef(marc_uri),
-                    predicate=FCREPO.uuid)),
-                body=marc_body)
-        return marc_content_uri
+        self.repository.insert(
+            marc_meta_uri,
+            'rdfs:label',
+            bib_number)
+        self.index(marc_meta_uri)
+        return marc_uri
 
 def main():
     pass

@@ -12,6 +12,8 @@ Licence:     GPLv3
 __author__ = "Jeremy Nelson"
 __license__ = "GPLv3"
 
+import json
+import rdflib
 
 from flask import abort, Flask, jsonify, render_template, redirect, request
 #from flask.ext.elastic import Elastic
@@ -33,12 +35,18 @@ def guess_name(entity):
         name = ','.join(entity.get('bf:titleValue'))
     if 'bf:subtitle' in entity:
         name = ','.join(entity.get('bf:subtitle'))
+    elif 'bf:title' in entity:
+        name = ','.join(entity.get('bf:title'))
     elif 'bf:titleStatement' in entity:
         name = ','.join(entity.get('bf:titleStatement'))
     elif 'bf:workTitle' in entity:
         name = ','.join([guess_name(title) for title in entity.get('bf:workTitle')])
     elif 'bf:label' in entity:
         name = ','.join(entity.get('bf:label'))
+    elif 'bf:authorizedAccessPoint' in entity:
+        name = ','.join(entity.get('bf:authorizedAccessPoint'))
+    else:
+        name = ','.join(entity.get('fcrepo:uuid'))
     return name
 
 @app.route('/search', methods=['POST', 'GET'])
@@ -65,6 +73,35 @@ def search():
     #return jsonify(result)
     #return "{} phrase={}".format(search_type, phrase)
 
+@app.route("/<uuid>.<ext>")
+@app.route("/<uuid>")
+def resource(uuid, ext='html'):
+    """Detailed view for a single resource
+
+    Args:
+        uuid: Fedora UUID also used as ID in Elastic Search index
+    """
+    if es_search.exists(id=uuid, index='bibframe'):
+        result = es_search.get_source(id=uuid, index='bibframe')
+        for key, value in result.items():
+            if key.startswith('fcrepo:uuid'):
+                continue
+            for i,row in enumerate(value):
+                if es_search.exists(id=row, index='bibframe'):
+                    result[key][i] = es_search.get_source(id=row, index='bibframe')
+        fedora_url = result.get('fcrepo:hasLocation')[0]
+        fedora_graph = rdflib.Graph().parse(fedora_url)
+        related = es_search.search(q=uuid, index='bibframe')
+        if ext.startswith('json'):
+            return fedora_graph.serialize(format='json-ld', indent=2).decode()
+        return render_template(
+            'detail.html', 
+            entity=result, 
+            graph=fedora_graph,
+            related=related
+        )
+    abort(404)
+    
 
 @app.route("/")
 def index():

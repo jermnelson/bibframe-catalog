@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<h2>{% for type in entity['type'] %}<em>{{ type }}</em>{% endfor %}</h2>
+<h1>{{ entity|name }}</h1>
+<ul>
+ <li><a href="#result">Search Result</a></li>
+ <li><a href="#rdf">Fedora RDF</a></li>
+ <li><a href="#related">Related BIBFRAME Resources</a></li>
+ <li><a href="/{{ entity['fcrepo:uuid'][0] }}.json">JSON-LD</a></li>
+</ul>
+<a name="result"></a>
+<h3>Elastic Search</h3>
+<dl>
+ {% for key, val in entity.items() %}
+ <dt>{{ key }}</dt>
+ <dd>{{ val }}</dd>
+ {% endfor %}
+</dl>
+<a href="rdf"></a>
+<h3>Fedora RDF</h3>
+<table style="border: 1px solid black">
+ <tr style="border: 1px solid black">
+  <th>Predicate</th>
+  <th>Object</th>
+ </tr>
+ {% for p,o in graph.predicate_objects() %}
+ <tr>
+   <td style="border: 1px solid black">{{ p }}</td>
+   <td style="border: 1px solid black">{{ o }}</td>
+ </tr>
+ {% endfor %}
+</table>
+<a name="related"></a>
+<h3>Related BIBFRAME Resources</h3>
+<p>
+ <strong>Total:</strong> {{ related['hits']['total'] }}
+</p>
+<ol>
+{% for hit in related['hits']['hits'] %}
+<li><a href="/{{ hit['_source']['fcrepo:uuid'][0] }}"> {% for type in hit['_source']['type'] %}<em>{{ type }}</em>{% endfor %}</a></li>
+{% endfor %}
+</ol>
+{% endblock %} 

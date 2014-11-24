@@ -8,8 +8,15 @@
 {% set entity = hit['_source'] %}
 
 <li>
-{#{ entity['bf:workTitle'] }#}
+{#
+<dl>
+{% for key,val in entity.items() %}
+  <dt>{{ key }}</dt>
+  <dd>{{ val }}</dd>
 
+{% endfor %}
+</dl>
+#}
 {% for type in entity['type'] %}<em>{{ type }}</em>{% endfor %} 
 <a href="{{ entity['fcrepo:uuid'][0] }}">
 {{ entity|name }}

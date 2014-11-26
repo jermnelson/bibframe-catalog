@@ -92,6 +92,8 @@ def create_sparql_insert_row(predicate, object_):
         else:
             value = """ "{}" """.format(object_)
         statement += value
+    if type(object_) == rdflib.BNode:
+        statement += """ "BNODE:{}" """.format(object_)
     statement += ".\n"
     return statement
 
@@ -122,6 +124,7 @@ def guess_search_doc_type(graph, fcrepo_uri):
         'Work',
         'Annotation',
         'Authority',
+        'HeldItem',
         'Person',
         'Place',
         'Provider',
@@ -152,11 +155,15 @@ class GraphIngester(object):
             graph(rdflib.Graph): BIBFRAM RDF Graph
             repository(flask_fedora_commons.Repository): Fedora Commons Repository
             quiet(boolean): If False, prints status of ingestion
+            debug(boolean): Adds additional information for debugging purposes
 
         """
         self.bf2uris = {}
+        self.debug = kwargs.get('debug', False)
         self.uris2uuid = {}
         self.elastic_search = kwargs.get('elastic_search', Elasticsearch())
+        if not self.elastic_search.indices.exists('bibframe'):
+            self.elastic_search.indices.create('bibframe')
         self.graph = kwargs.get('graph', default_graph())
         self.repository = kwargs.get('repository', Repository())
         self.quiet = kwargs.get('quiet', False)
@@ -273,6 +280,7 @@ class GraphIngester(object):
                 subject=subject,
                 predicate=predicate)
             for object_value in objects:
+
                 result = self.dedup(str(object_value), doc_type)
                 if result:
                     return result
@@ -305,6 +313,15 @@ class GraphIngester(object):
         start = datetime.datetime.utcnow()
         if self.quiet is False:
             print("Started ingestion at {}".format(start.isoformat()))
+        query = self.graph.query("""PREFIX bf: <http://bibframe.org/vocab/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT ?work
+WHERE {
+  ?work rdf:type bf:Work .
+}""")
+        for row in query:
+            self.stub(row[0])
         for i, subject_uri in enumerate(
             set([subject for subject in self.graph.subjects()])):
             if not i%10 and i > 0:
@@ -313,8 +330,7 @@ class GraphIngester(object):
             if not i%100:
                 if self.quiet is False:
                     print(i, end="")
-            if not self.exists(subject_uri):
-                self.process_subject(subject_uri)
+            self.process_subject(subject_uri)
         end = datetime.datetime.utcnow()
         if self.quiet is False:
             print("Finished ingesting at {}, total time={} minutes for {} subjects".format(
@@ -338,11 +354,22 @@ class GraphIngester(object):
         fedora_url = self.repository.create()
         sparql = build_prefixes(self.repository.namespaces)
         sparql += "\nINSERT DATA {\n"
+        if self.debug:
+            sparql += create_sparql_insert_row(
+                OWL.sameAs,
+                subject
+            )
         for predicate, _object in self.graph.predicate_objects(subject=subject):
             if type(_object) == rdflib.Literal:
                 sparql += create_sparql_insert_row(
                     predicate,
                     _object
+                )
+            elif self.exists(_object):
+                object_url = self.exists(_object)
+                sparql += create_sparql_insert_row(
+                    predicate,
+                    rdflib.URIRef(object_url)
                 )
             elif _object in self.graph.subjects():
                 object_url = self.process_subject(_object)
@@ -371,11 +398,54 @@ class GraphIngester(object):
             self.index(rdflib.URIRef(fedora_url))
             return fedora_url
         except:
-            print("Could NOT process subject {}".format(subject))
+            print("Could NOT process subject {} Error={}".format(
+                subject,
+                sys.exc_info()[0]))
             print(fedora_url)
             print(sparql)
 
+    def stub(self, subject):
+        """Method creates a Fedora Object BIBFRAME stub with minimal
 
+        Args:
+            subject(rdflib.URIRef): Subject URI
+
+        Returns:
+            string: Fedora URI
+        """
+        fcrepo_uri = rdflib.URIRef(self.repository.create())
+        sparql = build_prefixes(self.repository.namespaces)
+        sparql += "\nINSERT DATA {\n"
+        if type(subject) == rdflib.URIRef:
+            sparql += "<> owl:sameAs <" + str(subject) + "> .\n"
+        elif type(subject) == rdflib.BNode:
+            sparql += """<> owl:sameAs "{}" .\n""".format(subject)
+        for predicate in [
+            BF.authorizedAccessPoint,
+            BF.label,
+            BF.titleValue,
+            MADS.authoritativeLabel]:
+                for obj_value in self.graph.objects(subject=subject,
+                                                    predicate=predicate):
+                    sparql += create_sparql_insert_row(predicate, obj_value)
+        for type_of in self.graph.objects(
+            subject=subject,
+            predicate=rdflib.RDF.type):
+                if str(type_of).startswith('http://bibframe'):
+                    sparql += "<> rdf:type <" + str(type_of) + "> .\n"
+        sparql += "}"
+        update_request = urllib.request.Request(
+            str(fcrepo_uri),
+            data=sparql.encode(),
+            method='PATCH',
+            headers={'Content-Type': 'application/sparql-update'})
+        try:
+            result = urllib.request.urlopen(update_request)
+            self.index(fcrepo_uri)
+        except urllib.request.HTTPError:
+            print("Error with {}, SPARQL:\n{}".format(fcrepo_uri, sparql))
+            raise ValueError(sparql)
+        return fcrepo_uri
 
 def main():
     pass

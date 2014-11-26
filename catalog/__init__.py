@@ -19,7 +19,7 @@ from flask import abort, Flask, jsonify, render_template, redirect, request
 #from flask.ext.elastic import Elastic
 from elasticsearch import Elasticsearch
 import sys
-#sys.path.append("C:\\Users\\jernelson\\Development\\flask-fedora")
+sys.path.append("C:\\Users\\jernelson\\Development\\flask-fedora")
 from flask_fedora_commons import Repository
 
 app = Flask(__name__)
@@ -60,7 +60,8 @@ def search():
         result = es_search.search(
             q=phrase,
             index='bibframe',
-            doc_type=search_type)
+            doc_type=search_type,
+            size=50)
     for hit in result.get('hits').get('hits'):
         for key, value in hit['_source'].items():
             if key.startswith('fcrepo:uuid'):
@@ -95,13 +96,13 @@ def resource(uuid, ext='html'):
         if ext.startswith('json'):
             return fedora_graph.serialize(format='json-ld', indent=2).decode()
         return render_template(
-            'detail.html', 
-            entity=result, 
+            'detail.html',
+            entity=result,
             graph=fedora_graph,
             related=related
         )
     abort(404)
-    
+
 
 @app.route("/")
 def index():

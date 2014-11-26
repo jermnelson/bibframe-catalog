@@ -34,6 +34,8 @@ class RecordIngester(object):
             repository: Flask Fedora Commons Repository instance
         """
         self.elastic_search = elastic_search
+        if not self.elastic_search.indices.exists('marc'):
+            self.elastic_search.indices.create('marc')
         self.record = record
         self.repository = repository
 
@@ -70,9 +72,10 @@ class RecordIngester(object):
             predicate=FCREPO.uuid)
         )
         marc_body = {
-            "owl:sameAs": marc_meta_url,
-            "rdfs:label": bib_number,
-            "fcrepo:created": created_on}
+            "owl:sameAs": [marc_meta_url,],
+            "rdfs:label": [bib_number,],
+            "fcrepo:created": [created_on,],
+            "fcrepo:uuid": [marc_uuid,]}
         self.elastic_search.index(
             index='marc',
             doc_type='marc21',

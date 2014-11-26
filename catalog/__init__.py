@@ -44,8 +44,13 @@ def guess_name(entity):
     elif 'bf:label' in entity:
         name = ','.join(entity.get('bf:label'))
     elif 'bf:authorizedAccessPoint' in entity:
-        name = ','.join(entity.get('bf:authorizedAccessPoint'))
-    else:
+        for row in entity.get('bf:authorizedAccessPoint'):
+            if row.find(" ") < 0:
+                continue
+            name += "{},".format(row)
+        if name.endswith(","):
+            name = name[:-1]
+    elif len(name) < 1:
         name = ','.join(entity.get('fcrepo:uuid'))
     return name
 
@@ -55,7 +60,7 @@ def search():
     search_type = request.form.get('search_type', 'kw')
     phrase = request.form.get('phrase')
     if search_type.startswith("Keyw"):
-        result = es_search.search(q=phrase)
+        result = es_search.search(q=phrase, index='bibframe')
     else:
         result = es_search.search(
             q=phrase,

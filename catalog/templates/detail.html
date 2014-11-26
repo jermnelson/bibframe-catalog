@@ -1,5 +1,13 @@
 {% extends 'base.html' %}
 
+{% block more_css %}
+<style>
+ .table_border {
+  border: 1px solid black;
+ }
+</style>
+{% endblock %}
+
 {% block body %}
 <h2>{% for type in entity['type'] %}<em>{{ type }}</em>{% endfor %}</h2>
 <h1>{{ entity|name }}</h1>
@@ -19,15 +27,15 @@
 </dl>
 <a href="rdf"></a>
 <h3>Fedora RDF</h3>
-<table style="border: 1px solid black">
- <tr style="border: 1px solid black">
+<table class="table_border">
+ <tr class="table_border">
   <th>Predicate</th>
   <th>Object</th>
  </tr>
  {% for p,o in graph.predicate_objects() %}
  <tr>
-   <td style="border: 1px solid black">{{ p }}</td>
-   <td style="border: 1px solid black">{{ o }}</td>
+   <td class="table_border">{{ p }}</td>
+   <td class="table_border">{{ o }}</td>
  </tr>
  {% endfor %}
 </table>

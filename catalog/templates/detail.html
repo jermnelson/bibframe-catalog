@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block body %}
-<h2>{% for type in entity['type'] %}<em>{{ type }}</em>{% endfor %}</h2>
+<h2><em>{% for type in entity['type'] %}{{ type }}{% endfor %} Display <small>v</smalL>{{ version }}</em></h2>
 <h1>{{ entity|name }}</h1>
 <ul>
  <li><a href="#result">Search Result</a></li>
@@ -18,7 +18,7 @@
  <li><a href="/{{ entity['fcrepo:uuid'][0] }}.json">JSON-LD</a></li>
 </ul>
 <a name="result"></a>
-<h3>Elastic Search</h3>
+<h3>Elastic Search Result</h3>
 <dl>
  {% for key, val in entity.items() %}
  <dt>{{ key }}</dt>
@@ -46,7 +46,14 @@
 </p>
 <ol>
 {% for hit in related['hits']['hits'] %}
-<li><a href="/{{ hit['_source']['fcrepo:uuid'][0] }}"> {% for type in hit['_source']['type'] %}<em>{{ type }}</em>{% endfor %}</a></li>
+{% set resource = hit['_source'] %}
+{% if resource['fcrepo:uuid'][0] !=  entity['fcrepo:uuid'][0] %}
+<li>
+ <a href="/{{ resource['fcrepo:uuid'][0] }}"> {% for type in resource['type'] %}<em>{{ type }}</em>{% endfor %}
+  {{ resource|name }}
+ </a>
+</li>
+{% endif %}
 {% endfor %}
 </ol>
 {% endblock %} 

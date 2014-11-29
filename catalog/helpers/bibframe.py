@@ -19,7 +19,31 @@ import sys
 import urllib.request
 from flask_fedora_commons import build_prefixes, Repository
 from elasticsearch import Elasticsearch
-from string import Template
+
+RDF = rdflib.Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+RDFS = rdflib.Namespace("http://www.w3.org/2000/01/rdf-schema#")
+TEST = rdflib.Namespace("info:fedora/test/")
+MADS = rdflib.Namespace("http://www.loc.gov/mads/rdf/v1#")
+FOAF = rdflib.Namespace("http://xmlns.com/foaf/0.1/")
+NT = rdflib.Namespace("http://www.jcp.org/jcr/nt/1.0")
+SV = rdflib.Namespace("http://www.jcp.org/jcr/sv/1.0")
+XMLNS = rdflib.Namespace("http://www.w3.org/2000/xmlns/")
+SCHEMA = rdflib.Namespace("http://schema.org/")
+FEDORARELSEXT = rdflib.Namespace("http://fedora.info/definitions/v4/rels-ext#")
+XSI = rdflib.Namespace("http://www.w3.org/2001/XMLSchema-instance")
+OWL = rdflib.Namespace("http://www.w3.org/2002/07/owl#")
+FCREPO = rdflib.Namespace("http://fedora.info/definitions/v4/repository#")
+PREMIS = rdflib.Namespace("http://www.loc.gov/premis/rdf/v1#")
+FEDORA = rdflib.Namespace("http://fedora.info/definitions/v4/rest-api#")
+XS = rdflib.Namespace("http://www.w3.org/2001/XMLSchema")
+MODE = rdflib.Namespace("http://www.modeshape.org/1.0")
+MIX = rdflib.Namespace("http://www.jcp.org/jcr/mix/1.0")
+FEDORACONFIG = rdflib.Namespace("http://fedora.info/definitions/v4/config#")
+IMAGE = rdflib.Namespace("http://www.modeshape.org/images/1.0")
+XML = rdflib.Namespace("http://www.w3.org/XML/1998/namespace")
+AUTHZ = rdflib.Namespace("http://fedora.info/definitions/v4/authorization#")
+DC = rdflib.Namespace("http://purl.org/dc/elements/1.1/")
+BF = rdflib.Namespace("http://bibframe.org/vocab/")
 
 CONTEXT = {
     "authz": "http://fedora.info/definitions/v4/authorization#",
@@ -47,13 +71,7 @@ CONTEXT = {
     "xs": "http://www.w3.org/2001/XMLSchema",
     "xsi": "http://www.w3.org/2001/XMLSchema-instance"}
 
-for key, value in CONTEXT.items():
-    setattr(
-        sys.modules[__name__],
-        key.upper(),
-        rdflib.Namespace(value))
-
-url_check_re = regex = re.compile(
+URL_CHECK_RE = re.compile(
     r'^(?:http|ftp)s?://' # http:// or https://
     r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' # domain...
     r'localhost|' # localhost...
@@ -82,7 +100,7 @@ def create_sparql_insert_row(predicate, object_):
     else:
         statement += "<" + str(predicate) + ">"
     if type(object_) == rdflib.URIRef:
-        if url_check_re.search(str(object_)):
+        if URL_CHECK_RE.search(str(object_)):
             statement += " <" + str(object_) + "> "
         else:
             statement += """ "{}" """
@@ -117,9 +135,11 @@ def guess_search_doc_type(graph, fcrepo_uri):
         string: Doc type of subject
     """
     doc_type = 'Resource'
-    subject_types = [obj for obj in graph.objects(
-                subject=fcrepo_uri,
-                predicate=rdflib.RDF.type)]
+    subject_types = [
+        obj for obj in graph.objects(
+            subject=fcrepo_uri,
+            predicate=rdflib.RDF.type)
+    ]
     for class_name in [
         'Work',
         'Annotation',
@@ -131,9 +151,10 @@ def guess_search_doc_type(graph, fcrepo_uri):
         'Title',
         'Topic',
         'Organization',
-        'Instance']:
-            if getattr(BF, class_name) in subject_types:
-                doc_type = class_name
+        'Instance'
+    ]:
+        if getattr(BF, class_name) in subject_types:
+            doc_type = class_name
     return doc_type
 
 class GraphIngester(object):
@@ -168,6 +189,23 @@ class GraphIngester(object):
         self.repository = kwargs.get('repository', Repository())
         self.quiet = kwargs.get('quiet', False)
 
+    def init_subject(self, subject):
+        """Method initializes a subject, serializes JSON-LD of Fedora container
+        
+        Args:
+            subject(rdflib.Term): Subject
+
+	Returns:
+            fedora_url
+        """
+        raw_turtle = "PREFIX bf: <http://bibframe.org/vocab/>"
+        for predicate, _object in self.graph.predicate_objects(subject=subject):
+            if type(_object) == rdflib.Literal:
+                raw_turtle += "<> <" + str(predicate) + """> "{}" .""".format(_object)
+        fedora_url = self.repository.create(data=raw_turtle.encode())
+        self.index(fedora_url)
+        return fedora_url
+
     def generate_body(self, fedora_uri):
         """Function takes a Fedora URI, filters the Fedora graph and returns a dict
         for indexing into Elastic search
@@ -179,6 +217,14 @@ class GraphIngester(object):
             dict: Dictionary of values filtered for Elastic Search indexing
         """
         def get_id_or_value(value):
+            """Helper function takes a dict with either a value or id and returns
+            the dict value
+
+            Args:
+                value(dict)
+            Returns:
+                string or None
+            """
             if '@value' in value:
                 return value.get('@value')
             elif '@id' in value:
@@ -189,6 +235,13 @@ class GraphIngester(object):
                     return uri
             return value
         def set_or_expand(key, value):
+            """Helper function takes a key and value and either creates a key
+            with either a list or appends an existing key-value to the value
+            
+            Args:
+                key 
+                value
+            """
             if key not in body:
                 body[key] = []
             if type(value) == list:
@@ -212,8 +265,9 @@ class GraphIngester(object):
                         if key in [
                             'fcrepo:lastModified',
                             'fcrepo:created',
-                            'fcrepo:uuid']:
-                                set_or_expand(key, val)
+                            'fcrepo:uuid'
+                        ]:
+                            set_or_expand(key, val)
                         elif key.startswith('@type'):
                             for name in val:
                                 if name.startswith('bf:'):
@@ -448,6 +502,7 @@ WHERE {
         return fcrepo_uri
 
 def main():
+    """Main function"""
     pass
 
 if __name__ == '__main__':

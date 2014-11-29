@@ -11,6 +11,9 @@ Licence:     GPLv3
 """
 __author__ = "Jeremy Nelson"
 __license__ = "GPLv3"
+import os
+with open(os.path.join("..", "VERSION")) as version:
+    __version__ = version.read().strip()
 
 import json
 import rdflib
@@ -104,7 +107,8 @@ def resource(uuid, ext='html'):
             'detail.html',
             entity=result,
             graph=fedora_graph,
-            related=related
+            related=related,
+            version=__version__
         )
     abort(404)
 
@@ -115,4 +119,5 @@ def index():
     return render_template(
         "index.html",
         repository=repository,
-        search=es_search)
+        search=es_search,
+        version=__version__)

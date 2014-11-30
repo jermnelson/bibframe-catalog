@@ -1,11 +1,67 @@
 import rdflib
 import unittest
 import sys
+#sys.path.append("E:\\2014\\bibframe-catalog")
+sys.path.append("/Users/jeremynelson/2014/bibframe-catalog")
 import catalog.helpers.bibframe as bibframe
 import flask_fedora_commons
 
 LOC_DEMO_COLLECTION_ONE = rdflib.Graph()
 LOC_DEMO_COLLECTION_TWO = rdflib.Graph()
+
+LOC2_WORK_63_TURTLE = """@prefix bf: <http://bibframe.org/vocab/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://bibframe.org/resources/sample-lc-2/16736259> a bf:Text,
+        bf:Work ;
+    bf:authorizedAccessPoint "Howden, Martin. Russell Crowe :the biography",
+        "howdenmartinrussellcrowethebiographyengworktext"@x-bf-hash ;
+    bf:classification <http://bibframe.org/resources/sample-lc-2/16736259classification19> ;
+    bf:classificationLcc <http://id.loc.gov/authorities/classification/PN3018.C76> ;
+    bf:creator <http://bibframe.org/resources/sample-lc-2/16736259person12> ;
+    bf:derivedFrom <http://bibframe.org/resources/sample-lc-2/16736259.marcxml.xml> ;
+    bf:language <http://id.loc.gov/vocabulary/languages/eng> ;
+    bf:subject <http://bibframe.org/resources/sample-lc-2/16736259person14>,
+        <http://bibframe.org/resources/sample-lc-2/16736259topic15>,
+        <http://bibframe.org/resources/sample-lc-2/16736259topic16>,
+        <http://id.loc.gov/vocabulary/geographicAreas/u-at> ;
+    bf:workTitle <http://bibframe.org/resources/sample-lc-2/16736259title11> .
+
+<http://bibframe.org/resources/sample-lc-2/16736259classification19> a bf:Classification ;
+    bf:classificationEdition "22",
+        "full" ;
+    bf:classificationNumber "791.43028092" ;
+    bf:classificationScheme "ddc" ;
+    bf:label "791.43028092" .
+
+<http://bibframe.org/resources/sample-lc-2/16736259person12> a bf:Person ;
+    bf:authorizedAccessPoint "Howden, Martin." ;
+    bf:hasAuthority <http://id.loc.gov/authorities/names/nb2008020278> ;
+    bf:label "Howden, Martin." .
+
+<http://bibframe.org/resources/sample-lc-2/16736259person14> a bf:Person ;
+    bf:authorizedAccessPoint "Crowe, Russell, 1964-" ;
+    bf:hasAuthority <http://id.loc.gov/authorities/names/no97049663> ;
+    bf:label "Crowe, Russell, 1964-" .
+
+<http://bibframe.org/resources/sample-lc-2/16736259title11> a bf:Title ;
+    bf:subtitle "the biography " ;
+    bf:titleValue "Russell Crowe :" .
+
+<http://bibframe.org/resources/sample-lc-2/16736259topic15> a bf:Topic ;
+    bf:authorizedAccessPoint "Actors--Australia--Biography" ;
+    bf:hasAuthority <http://id.loc.gov/authorities/subjects/sh2009113517> ;
+    bf:label "Actors--Australia--Biography" .
+
+<http://bibframe.org/resources/sample-lc-2/16736259topic16> a bf:Topic ;
+    bf:authorizedAccessPoint "Motion picture actors and actresses--Australia--Biography" ;
+    bf:hasAuthority <http://id.loc.gov/authorities/subjects/sh2010102437> ;
+    bf:label "Motion picture actors and actresses--Australia--Biography" .
+
+"""
 
 class FunctionsTest(unittest.TestCase):
 
@@ -29,7 +85,9 @@ class FunctionsTest(unittest.TestCase):
             """<> bf:provider "BNODE:67788999" .\n""")
 
     def test_URL_CHECK_RE(self):
-        self.assert_(bibframe.URL_CHECK_RE.search("http://www.example.com/"))
+        self.assertTrue(bibframe.URL_CHECK_RE.search("http://www.example.com/"))
+        self.assertIsNone(
+            bibframe.URL_CHECK_RE.search("http://www.example.com/extra space"))
 
     def test_create_sparql_insert_row_literal(self):
         row = bibframe.create_sparql_insert_row(
@@ -45,6 +103,31 @@ class FunctionsTest(unittest.TestCase):
             row,
             """<> bf:title ''' The "Best" Test Title''' .\n""")
 
+
+    def test_create_sparql_insert_row_valid_urlref(self):
+        valid_url_row = bibframe.create_sparql_insert_row(
+            bibframe.BF.instanceOf,
+            rdflib.URIRef('http://localhost/Work/678'))
+        self.assertEqual(
+            valid_url_row,
+            """<> bf:instanceOf <http://localhost/Work/678> .\n""")
+        
+    def test_create_sparql_insert_row_invalid_urlref(self):
+        invalid_url_row =  bibframe.create_sparql_insert_row(
+            bibframe.BF.instanceOf,
+            rdflib.URIRef('http://catalog/Work 678'))
+        self.assertEqual(
+            invalid_url_row,
+            """<> bf:instanceOf "http://catalog/Work 678" .\n""")
+        # This test case comes from loading graph at 
+        # http://bibframe.org/resources/sample-lc-2/bibframe.rdf
+        invalid_loc_row = bibframe.create_sparql_insert_row(
+            bibframe.BF.classificationValue,
+            rdflib.URIRef('http://id.loc.gov/authorities/classification/HF3224.6 R36'))
+        self.assertEqual(
+            invalid_loc_row,
+            """<> bf:classificationValue "http://id.loc.gov/authorities/classification/HF3224.6 R36" .\n""")
+        
 
     def test_guess_search_doc_type(self):
         self.assertEqual(
@@ -78,25 +161,61 @@ class FunctionsTest(unittest.TestCase):
 class GraphIngesterTest(unittest.TestCase):
 
     def setUp(self):
-        self.graph = rdflib.Graph()
+        self.graph63 = rdflib.Graph().parse(
+            data=LOC2_WORK_63_TURTLE,
+            format='turtle')
+        self.work63 = rdflib.term.URIRef(
+            'http://bibframe.org/resources/sample-lc-2/16736259')
         self.test_urls = list()
         self.repository = flask_fedora_commons.Repository()
-
+        self.ingester = bibframe.GraphIngester(
+            graph=self.graph63,
+            repository=self.repository)
+        
     def test_default_init(self):
-        ingester = bibframe.GraphIngester(graph=self.graph,
-                                          repository=self.repository)
+        
         self.assertEqual(
-            self.graph,
-            ingester.graph
+            self.graph63,
+            self.ingester.graph
         )
         self.assertEqual(
-            ingester.repository.base_url,
+            self.ingester.repository.base_url,
             'http://localhost:8080'
         )
         self.assertEqual(
-            ingester.elastic_search.info().get('status'),
+            self.ingester.elastic_search.info().get('status'),
             200
         )
+        subjects = list(set([s for s in self.graph63.subjects()]))
+        self.assertEqual(len(subjects), 7)
+
+    def test_init_subject(self):
+        fedora_uri = self.ingester.init_subject(self.work63)
+        self.assertIsNotNone(fedora_uri)
+        self.test_urls.append(fedora_uri)
+        # Test Fedora 4 Container and RDF Content
+        fedora_g63 = rdflib.Graph().parse(fedora_uri)
+        print(fedora_g63.serialize(format="turtle").decode())
+        authorizedAccessPoints = [
+            object_ for object_ in fedora_g63.objects(subject=rdflib.URIRef(fedora_uri),
+                               predicate=bibframe.BF.authorizedAccessPoint)
+        ]
+        self.assertListEqual(
+            authorizedAccessPoints,
+            [rdflib.Literal("Howden, Martin. Russell Crowe :the biography"),
+             rdflib.Literal("howdenmartinrussellcrowethebiographyengworktext")])
+        # Test Elastic search result
+        uuid = fedora_g63.value(subject=rdflib.URIRef(fedora_uri),
+                                predicate=bibframe.FCREPO.uuid)
+        self.assertNotNone(uuid)
+
+        
+        
+        
+        
+        
+        
+        
 
     def tearDown(self):
         for url in self.test_urls:

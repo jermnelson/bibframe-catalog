@@ -103,7 +103,7 @@ def create_sparql_insert_row(predicate, object_):
         if URL_CHECK_RE.search(str(object_)):
             statement += " <" + str(object_) + "> "
         else:
-            statement += """ "{}" """
+            statement += """ "{}" """.format(object_)
     if type(object_) == rdflib.Literal:
         if str(object_).find('"') > -1:
             value = """ '''{}''' """.format(object_)
@@ -191,6 +191,7 @@ class GraphIngester(object):
 
     def init_subject(self, subject):
         """Method initializes a subject, serializes JSON-LD of Fedora container
+        and then a simplified indexed into the Elastic Search instance.
         
         Args:
             subject(rdflib.Term): Subject
@@ -202,8 +203,13 @@ class GraphIngester(object):
         for predicate, _object in self.graph.predicate_objects(subject=subject):
             if type(_object) == rdflib.Literal:
                 raw_turtle += "<> <" + str(predicate) + """> "{}" .""".format(_object)
-        fedora_url = self.repository.create(data=raw_turtle.encode())
-        self.index(fedora_url)
+        new_request = urllib.request.Request(
+            "/".join([self.repository.base_url, 'rest']),
+            data=raw_turtle.encode(),
+            method="POST",
+            headers={"Context-Type": "text/turtle"})
+        fedora_url = urllib.request.urlopen(new_request).read().decode()
+        self.index(rdflib.URIRef(fedora_url))
         return fedora_url
 
     def generate_body(self, fedora_uri):
@@ -349,6 +355,8 @@ class GraphIngester(object):
             fcrepo_uri(rdflib.URIRef): Fedora URI Ref for a BIBFRAME subject
 
         """
+        if not fcrepo_uri.endswith("fcr:metadata"):
+            fcrepo_uri = "/".join([fcrepo_uri, "fcr:metadata"]) 
         fcrepo_graph = default_graph().parse(str(fcrepo_uri))
         doc_id = str(fcrepo_graph.value(
                     subject=fcrepo_uri,

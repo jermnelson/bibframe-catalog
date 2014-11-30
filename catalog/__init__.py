@@ -17,11 +17,13 @@ with open("/Users/jeremynelson/2014/bibframe-catalog/VERSION") as version:
 
 import json
 import rdflib
+import urllib.request
 
 from flask import abort, Flask, jsonify, render_template, redirect, request
 #from flask.ext.elastic import Elastic
 from elasticsearch import Elasticsearch
 import sys
+
 import flask_fedora_commons
 
 app = Flask(__name__)

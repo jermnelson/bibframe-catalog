@@ -12,7 +12,7 @@ Licence:     GPLv3
 __author__ = "Jeremy Nelson"
 __license__ = "GPLv3"
 import os
-with open(os.path.join("..", "VERSION")) as version:
+with open("/Users/jeremynelson/2014/bibframe-catalog/VERSION") as version:
     __version__ = version.read().strip()
 
 import json
@@ -22,11 +22,10 @@ from flask import abort, Flask, jsonify, render_template, redirect, request
 #from flask.ext.elastic import Elastic
 from elasticsearch import Elasticsearch
 import sys
-sys.path.append("C:\\Users\\jernelson\\Development\\flask-fedora")
-from flask_fedora_commons import Repository
+import flask_fedora_commons
 
 app = Flask(__name__)
-repository = Repository(app)
+repository = flask_fedora_commons.Repository(app)
 #es_search = Elastic(app)
 es_search = Elasticsearch()
 

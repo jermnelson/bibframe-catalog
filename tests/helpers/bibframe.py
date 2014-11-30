@@ -1,8 +1,11 @@
 import rdflib
 import unittest
 import sys
-sys.path.append("E:\\2014\\bibframe-catalog")
 import catalog.helpers.bibframe as bibframe
+import flask_fedora_commons
+
+LOC_DEMO_COLLECTION_ONE = rdflib.Graph()
+LOC_DEMO_COLLECTION_TWO = rdflib.Graph()
 
 class FunctionsTest(unittest.TestCase):
 
@@ -17,13 +20,31 @@ class FunctionsTest(unittest.TestCase):
     def test_default_graph(self):
         self.assertEqual(1,1)
 
-    def test_create_sparql_insert_row(self):
+    def test_create_sparql_insert_row_bnode(self):
+        row = bibframe.create_sparql_insert_row(
+            bibframe.BF.provider,
+            rdflib.BNode("67788999"))
+        self.assertEqual(
+            row,
+            """<> bf:provider "BNODE:67788999" .\n""")
+
+    def test_URL_CHECK_RE(self):
+        self.assert_(bibframe.URL_CHECK_RE.search("http://www.example.com/"))
+
+    def test_create_sparql_insert_row_literal(self):
         row = bibframe.create_sparql_insert_row(
             bibframe.BF.title,
             rdflib.Literal("Test Title"))
         self.assertEqual(
             row,
             """<> bf:title "Test Title" .\n""")
+        row = bibframe.create_sparql_insert_row(
+            bibframe.BF.title,
+            rdflib.Literal(""" The "Best" Test Title"""))
+        self.assertEqual(
+            row,
+            """<> bf:title ''' The "Best" Test Title''' .\n""")
+
 
     def test_guess_search_doc_type(self):
         self.assertEqual(
@@ -47,7 +68,7 @@ class FunctionsTest(unittest.TestCase):
                 self.graph,
                 held_item
             ),
-            'Resource'
+            'HeldItem'
         )
 
     def tearDown(self):
@@ -58,9 +79,12 @@ class GraphIngesterTest(unittest.TestCase):
 
     def setUp(self):
         self.graph = rdflib.Graph()
+        self.test_urls = list()
+        self.repository = flask_fedora_commons.Repository()
 
     def test_default_init(self):
-        ingester = bibframe.GraphIngester(graph=self.graph)
+        ingester = bibframe.GraphIngester(graph=self.graph,
+                                          repository=self.repository)
         self.assertEqual(
             self.graph,
             ingester.graph
@@ -75,7 +99,11 @@ class GraphIngesterTest(unittest.TestCase):
         )
 
     def tearDown(self):
-        pass
+        for url in self.test_urls:
+            self.repository.delete(url)
 
 if __name__ == '__main__':
+    print("""Loading Library of Congress Demo Collections located at
+http://bibframe.org/demos/""")
+    
     unittest.main()

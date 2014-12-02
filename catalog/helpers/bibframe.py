@@ -192,24 +192,40 @@ class GraphIngester(object):
     def init_subject(self, subject):
         """Method initializes a subject, serializes JSON-LD of Fedora container
         and then a simplified indexed into the Elastic Search instance.
-        
+
         Args:
             subject(rdflib.Term): Subject
 
-	Returns:
+	   Returns:
             fedora_url
         """
-        raw_turtle = "PREFIX bf: <http://bibframe.org/vocab/>"
+        if self.exists(subject):
+            return
+
+        raw_turtle = """PREFIX bf: <http://bibframe.org/vocab/>
+ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+ PREFIX mads: <http://www.loc.gov/mads/rdf/v1#>\n"""
         for predicate, _object in self.graph.predicate_objects(subject=subject):
             if type(_object) == rdflib.Literal:
-                raw_turtle += "<> <" + str(predicate) + """> "{}" .""".format(_object)
+                raw_turtle += create_sparql_insert_row(predicate, _object)
+            if predicate == rdflib.RDF.type:
+                raw_turtle += create_sparql_insert_row(predicate, _object)
         new_request = urllib.request.Request(
             "/".join([self.repository.base_url, 'rest']),
             data=raw_turtle.encode(),
             method="POST",
-            headers={"Context-Type": "text/turtle"})
-        fedora_url = urllib.request.urlopen(new_request).read().decode()
-        self.index(rdflib.URIRef(fedora_url))
+            headers={"Content-Type": "text/turtle"})
+        try:
+            fedora_url = urllib.request.urlopen(new_request).read().decode()
+            self.index(rdflib.URIRef(fedora_url))
+        except urllib.error.HTTPError as http_error:
+            print("Failed to add {}, Error={}\nTurtle=\n{}".format(
+                subject,
+                http_error,
+                raw_turtle))
+            raise http_error
+
+
         return fedora_url
 
     def generate_body(self, fedora_uri):
@@ -243,9 +259,9 @@ class GraphIngester(object):
         def set_or_expand(key, value):
             """Helper function takes a key and value and either creates a key
             with either a list or appends an existing key-value to the value
-            
+
             Args:
-                key 
+                key
                 value
             """
             if key not in body:
@@ -340,7 +356,6 @@ class GraphIngester(object):
                 subject=subject,
                 predicate=predicate)
             for object_value in objects:
-
                 result = self.dedup(str(object_value), doc_type)
                 if result:
                     return result
@@ -355,12 +370,11 @@ class GraphIngester(object):
             fcrepo_uri(rdflib.URIRef): Fedora URI Ref for a BIBFRAME subject
 
         """
-        if not fcrepo_uri.endswith("fcr:metadata"):
-            fcrepo_uri = "/".join([fcrepo_uri, "fcr:metadata"]) 
         fcrepo_graph = default_graph().parse(str(fcrepo_uri))
         doc_id = str(fcrepo_graph.value(
                     subject=fcrepo_uri,
                     predicate=FCREPO.uuid))
+
         self.uris2uuid[str(fcrepo_uri)] = doc_id
         doc_type = guess_search_doc_type(fcrepo_graph, fcrepo_uri)
         body = self.generate_body(fcrepo_uri)
@@ -375,17 +389,24 @@ class GraphIngester(object):
         start = datetime.datetime.utcnow()
         if self.quiet is False:
             print("Started ingestion at {}".format(start.isoformat()))
-        query = self.graph.query("""PREFIX bf: <http://bibframe.org/vocab/>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-SELECT DISTINCT ?work
-WHERE {
-  ?work rdf:type bf:Work .
-}""")
-        for row in query:
-            self.stub(row[0])
-        for i, subject_uri in enumerate(
-            set([subject for subject in self.graph.subjects()])):
+        subjects = set([subject for subject in self.graph.subjects()])
+        if self.quiet is False:
+            print("Initializing all subjects")
+        for i, subject in enumerate(subjects):
+            if not i%10 and i > 0:
+                if self.quiet is False:
+                    print(".", end="")
+            if not i%100:
+                if self.quiet is False:
+                    print(i, end="")
+            self.init_subject(subject)
+        finished_init = datetime.datetime.utcnow()
+        if self.quiet is False:
+            print("Finished initializing {} subjects at {}, time={}".format(
+                i,
+                finished_init,
+                (finished_init-start).seconds / 60.0))
+        for i, subject_uri in enumerate(subjects):
             if not i%10 and i > 0:
                 if self.quiet is False:
                     print(".", end="")
@@ -410,9 +431,9 @@ WHERE {
         Args:
             subject(rdflib.URIRef): Subject URI
         """
-        fedora_url = self.exists(subject)
-        if fedora_url:
-            return fedora_url
+##        fedora_url = self.exists(subject)
+##        if fedora_url:
+##            return fedora_url
         fedora_url = self.repository.create()
         sparql = build_prefixes(self.repository.namespaces)
         sparql += "\nINSERT DATA {\n"
@@ -422,30 +443,13 @@ WHERE {
                 subject
             )
         for predicate, _object in self.graph.predicate_objects(subject=subject):
-            if type(_object) == rdflib.Literal:
-                sparql += create_sparql_insert_row(
-                    predicate,
-                    _object
-                )
-            elif self.exists(_object):
+            if self.exists(_object):
                 object_url = self.exists(_object)
                 sparql += create_sparql_insert_row(
                     predicate,
                     rdflib.URIRef(object_url)
                 )
-            elif _object in self.graph.subjects():
-                object_url = self.process_subject(_object)
-                try:
-                    rdflib.URIRef(object_url)
-                except:
-                    print("Failed object url={}".format(object_url))
-                    print(subject, predicate, _object)
-
-                sparql += create_sparql_insert_row(
-                    predicate,
-                    rdflib.URIRef(object_url)
-                )
-            else:
+            elif _object != rdflib.Literal:
                 sparql += create_sparql_insert_row(
                     predicate,
                     _object)

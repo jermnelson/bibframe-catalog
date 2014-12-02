@@ -1,8 +1,8 @@
 import rdflib
 import unittest
 import sys
-#sys.path.append("E:\\2014\\bibframe-catalog")
-sys.path.append("/Users/jeremynelson/2014/bibframe-catalog")
+sys.path.append("E:\\2014\\bibframe-catalog")
+##sys.path.append("/Users/jeremynelson/2014/bibframe-catalog")
 import catalog.helpers.bibframe as bibframe
 import flask_fedora_commons
 
@@ -111,7 +111,7 @@ class FunctionsTest(unittest.TestCase):
         self.assertEqual(
             valid_url_row,
             """<> bf:instanceOf <http://localhost/Work/678> .\n""")
-        
+
     def test_create_sparql_insert_row_invalid_urlref(self):
         invalid_url_row =  bibframe.create_sparql_insert_row(
             bibframe.BF.instanceOf,
@@ -119,7 +119,7 @@ class FunctionsTest(unittest.TestCase):
         self.assertEqual(
             invalid_url_row,
             """<> bf:instanceOf "http://catalog/Work 678" .\n""")
-        # This test case comes from loading graph at 
+        # This test case comes from loading graph at
         # http://bibframe.org/resources/sample-lc-2/bibframe.rdf
         invalid_loc_row = bibframe.create_sparql_insert_row(
             bibframe.BF.classificationValue,
@@ -127,7 +127,7 @@ class FunctionsTest(unittest.TestCase):
         self.assertEqual(
             invalid_loc_row,
             """<> bf:classificationValue "http://id.loc.gov/authorities/classification/HF3224.6 R36" .\n""")
-        
+
 
     def test_guess_search_doc_type(self):
         self.assertEqual(
@@ -166,14 +166,14 @@ class GraphIngesterTest(unittest.TestCase):
             format='turtle')
         self.work63 = rdflib.term.URIRef(
             'http://bibframe.org/resources/sample-lc-2/16736259')
-        self.test_urls = list()
+        self.test_artifacts = list()
         self.repository = flask_fedora_commons.Repository()
         self.ingester = bibframe.GraphIngester(
             graph=self.graph63,
             repository=self.repository)
-        
+
     def test_default_init(self):
-        
+
         self.assertEqual(
             self.graph63,
             self.ingester.graph
@@ -192,37 +192,53 @@ class GraphIngesterTest(unittest.TestCase):
     def test_init_subject(self):
         fedora_uri = self.ingester.init_subject(self.work63)
         self.assertIsNotNone(fedora_uri)
-        self.test_urls.append(fedora_uri)
+
         # Test Fedora 4 Container and RDF Content
         fedora_g63 = rdflib.Graph().parse(fedora_uri)
-        print(fedora_g63.serialize(format="turtle").decode())
         authorizedAccessPoints = [
-            object_ for object_ in fedora_g63.objects(subject=rdflib.URIRef(fedora_uri),
-                               predicate=bibframe.BF.authorizedAccessPoint)
+            str(object_) for object_ in fedora_g63.objects(
+                subject=rdflib.URIRef(fedora_uri),
+                predicate=bibframe.BF.authorizedAccessPoint)
+        ]
+        container_types = [
+            str(object_) for object_ in fedora_g63.objects(
+                subject=rdflib.URIRef(fedora_uri),
+                predicate=bibframe.RDF.type
+                )
         ]
         self.assertListEqual(
-            authorizedAccessPoints,
-            [rdflib.Literal("Howden, Martin. Russell Crowe :the biography"),
-             rdflib.Literal("howdenmartinrussellcrowethebiographyengworktext")])
+            sorted(authorizedAccessPoints),
+            ["Howden, Martin. Russell Crowe :the biography",
+             "howdenmartinrussellcrowethebiographyengworktext"])
+        self.assertTrue('http://bibframe.org/vocab/Work' in container_types)
+        self.assertTrue('http://bibframe.org/vocab/Text' in container_types)
         # Test Elastic search result
         uuid = fedora_g63.value(subject=rdflib.URIRef(fedora_uri),
                                 predicate=bibframe.FCREPO.uuid)
-        self.assertNotNone(uuid)
+        self.assertIsNotNone(uuid)
+        es_result = self.ingester.elastic_search.get_source(
+            id=uuid,
+            index='bibframe'
+        )
+        self.assertIsNotNone(es_result)
+        self.test_artifacts.append({
+            "uuid": uuid,
+            "fcrepo_url": fedora_uri,
+            "doc_type": bibframe.guess_search_doc_type(
+                fedora_g63,
+                rdflib.URIRef(fedora_uri))})
 
-        
-        
-        
-        
-        
-        
-        
 
     def tearDown(self):
-        for url in self.test_urls:
-            self.repository.delete(url)
+        for row in self.test_artifacts:
+            self.repository.delete(row.get('fcrepo_url'))
+            self.ingester.elastic_search.delete(
+                id=row.get('uuid'),
+                doc_type=row.get('doc_type'),
+                index='bibframe')
 
 if __name__ == '__main__':
     print("""Loading Library of Congress Demo Collections located at
 http://bibframe.org/demos/""")
-    
+
     unittest.main()

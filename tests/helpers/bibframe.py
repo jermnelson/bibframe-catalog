@@ -1,9 +1,15 @@
+import os
 import rdflib
 import unittest
 import sys
-sys.path.append("E:\\2014\\bibframe-catalog")
-##sys.path.append("/Users/jeremynelson/2014/bibframe-catalog")
-import catalog.helpers.bibframe as bibframe
+try:
+    import bf_catalog.catalog.helpers.bibframe as bibframe
+except ImportError:
+    test_directory = os.path.dirname(__file__)
+    base_directory = test_directory.split(
+        "{0}tests{0}helpers".format(os.path.sep))[0]
+    sys.path.append(base_directory)
+    import catalog.helpers.bibframe as bibframe
 import flask_fedora_commons
 
 LOC_DEMO_COLLECTION_ONE = rdflib.Graph()

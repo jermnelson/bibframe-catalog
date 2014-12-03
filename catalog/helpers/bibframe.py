@@ -13,6 +13,7 @@ __author__ = "Jeremy Nelson"
 
 import datetime
 import json
+import os
 import rdflib
 import re
 import sys
@@ -184,7 +185,17 @@ class GraphIngester(object):
         self.uris2uuid = {}
         self.elastic_search = kwargs.get('elastic_search', Elasticsearch())
         if not self.elastic_search.indices.exists('bibframe'):
-            self.elastic_search.indices.create('bibframe')
+            helper_directory = os.path.dirname(__file__)
+            base_directory = helper_directory.split(
+                "{0}catalog{0}helpers".format(os.path.sep))[0]
+            with open(
+                os.path.join(
+                    base_directory,
+                    "search{0}config{0}bibframe-map.json".format(
+                    os.path.sep))) as raw_json:
+                        bf_map = json.load(raw_json)
+            self.elastic_search.indices.create(index='bibframe', body=bf_map)
+
         self.graph = kwargs.get('graph', default_graph())
         self.repository = kwargs.get('repository', Repository())
         self.quiet = kwargs.get('quiet', False)
@@ -431,10 +442,7 @@ class GraphIngester(object):
         Args:
             subject(rdflib.URIRef): Subject URI
         """
-##        fedora_url = self.exists(subject)
-##        if fedora_url:
-##            return fedora_url
-        fedora_url = self.repository.create()
+        fedora_url = self.exists(subject)
         sparql = build_prefixes(self.repository.namespaces)
         sparql += "\nINSERT DATA {\n"
         if self.debug:

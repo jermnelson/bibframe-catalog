@@ -12,7 +12,9 @@ Licence:     GPLv3
 __author__ = "Jeremy Nelson"
 __license__ = "GPLv3"
 import os
-with open("E:/2014/bibframe-catalog/VERSION") as version:
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+with open(os.path.join(BASE_DIR, "VERSION")) as version:
     __version__ = version.read().strip()
 
 import json
@@ -55,7 +57,8 @@ def guess_name(entity):
         if name.endswith(","):
             name = name[:-1]
     elif len(name) < 1:
-        name = ','.join(entity.get('fcrepo:uuid'))
+        if 'fcrepo:uuid' in entity:
+            name = ','.join(entity.get('fcrepo:uuid'))
     return name
 
 @app.route('/search', methods=['POST', 'GET'])

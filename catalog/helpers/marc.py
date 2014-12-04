@@ -15,6 +15,8 @@ import pymarc
 import rdflib
 import urllib.request
 from catalog.helpers.bibframe import FCREPO
+from flask_fedora_commons import build_prefixes, Repository
+from elasticsearch import Elasticsearch
 
 class RecordIngester(object):
     """Class takes a MARC21 or MARC XML file, ingests into Fedora 4 repository
@@ -23,15 +25,16 @@ class RecordIngester(object):
     def __init__(
             self,
             record,
-            elastic_search,
-            repository
+            elastic_search=Elasticsearch(),
+            repository=Repository()
             ):
         """Initializes RecordIngester class
 
         Args:
             record: A MARC21 or MARC XML file
-            elastic_search: Elasticsearch instance
-            repository: Flask Fedora Commons Repository instance
+            elastic_search: Elasticsearch instance, defaults to localhost
+            repository: Flask Fedora Commons Repository instance,
+                        defaults to localhost
         """
         self.elastic_search = elastic_search
         if not self.elastic_search.indices.exists('marc'):

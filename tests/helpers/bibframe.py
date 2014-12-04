@@ -79,8 +79,13 @@ class FunctionsTest(unittest.TestCase):
         self.graph.add(
             (self.instance_uri, rdflib.RDF.type, bibframe.BF.Instance))
 
+    def test_dedup(self):
+        self.assertIsNone(bibframe.dedup(""))
+
+
     def test_default_graph(self):
-        self.assertEqual(1,1)
+        graph = bibframe.default_graph()
+        self.assertIsNotNone(graph)
 
     def test_create_sparql_insert_row_bnode(self):
         row = bibframe.create_sparql_insert_row(

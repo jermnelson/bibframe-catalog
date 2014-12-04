@@ -112,9 +112,61 @@ def create_sparql_insert_row(predicate, object_):
             value = """ "{}" """.format(object_)
         statement += value
     if type(object_) == rdflib.BNode:
-        statement += """ "BNODE:{}" """.format(object_)
+        statement += """ "{}" """.format(object_)
     statement += ".\n"
     return statement
+
+def dedup(term, elastic_search=Elasticsearch()):
+    """Function takes a term and attempts to match it againest three
+    subject properties that have been indexed into Elastic search, returns
+    the first hit if found.
+
+    Args:
+        term(string): A search term or phrase
+
+    Returns:
+        string URL of the top-hit for matching the term on a list of
+        properties
+    """
+    if term is None:
+        return
+    search_result = elastic_search.search(
+        index="bibframe",
+        body={
+            "query": {
+                "filtered": {
+                    "filter": {
+                        "or": [
+                            {
+                            "term": {
+                                "bf:authorizedAccessPoint.raw": term
+                            }
+                            },
+                            {
+                            "term": {
+                                "mads:authoritativeLabel.raw": term
+                            }
+
+                            },
+                            {
+                            "term": {
+                                "bf:label.raw": term
+                            }
+                            },
+                            {
+                            "term": {
+                                "bf:titleValue.raw": term
+                            }
+                            }
+                    ]
+                }
+            }
+        }
+    }
+    )
+    if search_result.get('hits').get('total') > 0:
+        top_hit = search_result['hits']['hits'][0]
+        return top_hit['_source']['fcrepo:hasLocation'][0]
 
 def default_graph():
     """Function generates a new rdflib Graph and sets all namespaces as part
@@ -210,9 +262,13 @@ class GraphIngester(object):
 	   Returns:
             fedora_url
         """
-        if self.exists(subject):
+        if str(subject) in self.bf2uris:
             return
-
+        existing_url =  self.exists(subject)
+        if existing_url:
+            if not str(subject) in self.bf2uris:
+                self.bf2uris[str(subject)] = existing_url
+            return
         raw_turtle = """PREFIX bf: <http://bibframe.org/vocab/>
  PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
  PREFIX mads: <http://www.loc.gov/mads/rdf/v1#>\n"""
@@ -228,6 +284,7 @@ class GraphIngester(object):
             headers={"Content-Type": "text/turtle"})
         try:
             fedora_url = urllib.request.urlopen(new_request).read().decode()
+            self.bf2uris[str(subject)] = fedora_url
             self.index(rdflib.URIRef(fedora_url))
         except urllib.error.HTTPError as http_error:
             print("Failed to add {}, Error={}\nTurtle=\n{}".format(
@@ -311,38 +368,7 @@ class GraphIngester(object):
                             set_or_expand(key, val)
         return body
 
-    def dedup(self, term, doc_type='Resource'):
-        """Method takes a term and attempts to match it againest three
-        subject properties that have been indexed into Elastic search, returns
-        the first hit if found. This method may need further refinement to
-        provide the optimal deduplication for BIBFRAME resources.
 
-        Args:
-            term(string): A search term or phrase
-            doc_type(string): Doc type to restrict search, defaults to Resource
-
-        Returns:
-            string URL of the top-hit for matching the term on a list of
-            properties
-        """
-        if term is None:
-            return
-        search_result = self.elastic_search.search(
-            index="bibframe",
-            doc_type=doc_type,
-            body={
-                "query": {
-                    "multi_match": {
-                        "query": term,
-                        "type": "phrase",
-                        "fields": [
-                            "bf:authorizedAccessPoint",
-                            "mads:authoritativeLabel",
-                            "bf:label",
-                            "bf:titleValue"]}}})
-        if search_result.get('hits').get('total') > 0:
-            top_hit = search_result['hits']['hits'][0]
-            return top_hit['_source']['fcrepo:hasLocation'][0]
 
 
     def exists(self, subject):
@@ -367,7 +393,7 @@ class GraphIngester(object):
                 subject=subject,
                 predicate=predicate)
             for object_value in objects:
-                result = self.dedup(str(object_value), doc_type)
+                result = dedup(str(object_value), self.elastic_search)
                 if result:
                     return result
 
@@ -385,8 +411,8 @@ class GraphIngester(object):
         doc_id = str(fcrepo_graph.value(
                     subject=fcrepo_uri,
                     predicate=FCREPO.uuid))
-
-        self.uris2uuid[str(fcrepo_uri)] = doc_id
+        if not str(fcrepo_uri) in self.uris2uuid:
+            self.uris2uuid[str(fcrepo_uri)] = doc_id
         doc_type = guess_search_doc_type(fcrepo_graph, fcrepo_uri)
         body = self.generate_body(fcrepo_uri)
         self.elastic_search.index(
@@ -442,7 +468,7 @@ class GraphIngester(object):
         Args:
             subject(rdflib.URIRef): Subject URI
         """
-        fedora_url = self.exists(subject)
+        fedora_url = self.bf2uris[str(subject)]
         sparql = build_prefixes(self.repository.namespaces)
         sparql += "\nINSERT DATA {\n"
         if self.debug:
@@ -451,8 +477,8 @@ class GraphIngester(object):
                 subject
             )
         for predicate, _object in self.graph.predicate_objects(subject=subject):
-            if self.exists(_object):
-                object_url = self.exists(_object)
+            if str(_object) in self.bf2uris:
+                object_url = self.bf2uris[str(_object)]
                 sparql += create_sparql_insert_row(
                     predicate,
                     rdflib.URIRef(object_url)
@@ -478,48 +504,6 @@ class GraphIngester(object):
             print(fedora_url)
             print(sparql)
 
-    def stub(self, subject):
-        """Method creates a Fedora Object BIBFRAME stub with minimal
-
-        Args:
-            subject(rdflib.URIRef): Subject URI
-
-        Returns:
-            string: Fedora URI
-        """
-        fcrepo_uri = rdflib.URIRef(self.repository.create())
-        sparql = build_prefixes(self.repository.namespaces)
-        sparql += "\nINSERT DATA {\n"
-        if type(subject) == rdflib.URIRef:
-            sparql += "<> owl:sameAs <" + str(subject) + "> .\n"
-        elif type(subject) == rdflib.BNode:
-            sparql += """<> owl:sameAs "{}" .\n""".format(subject)
-        for predicate in [
-            BF.authorizedAccessPoint,
-            BF.label,
-            BF.titleValue,
-            MADS.authoritativeLabel]:
-                for obj_value in self.graph.objects(subject=subject,
-                                                    predicate=predicate):
-                    sparql += create_sparql_insert_row(predicate, obj_value)
-        for type_of in self.graph.objects(
-            subject=subject,
-            predicate=rdflib.RDF.type):
-                if str(type_of).startswith('http://bibframe'):
-                    sparql += "<> rdf:type <" + str(type_of) + "> .\n"
-        sparql += "}"
-        update_request = urllib.request.Request(
-            str(fcrepo_uri),
-            data=sparql.encode(),
-            method='PATCH',
-            headers={'Content-Type': 'application/sparql-update'})
-        try:
-            result = urllib.request.urlopen(update_request)
-            self.index(fcrepo_uri)
-        except urllib.request.HTTPError:
-            print("Error with {}, SPARQL:\n{}".format(fcrepo_uri, sparql))
-            raise ValueError(sparql)
-        return fcrepo_uri
 
 def main():
     """Main function"""

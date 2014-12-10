@@ -277,6 +277,7 @@ class GraphIngester(object):
                 raw_turtle += create_sparql_insert_row(predicate, _object)
             if predicate == rdflib.RDF.type:
                 raw_turtle += create_sparql_insert_row(predicate, _object)
+
         new_request = urllib.request.Request(
             "/".join([self.repository.base_url, 'rest']),
             data=raw_turtle.encode(),

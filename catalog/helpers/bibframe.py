@@ -285,24 +285,25 @@ class GraphIngester(object):
             headers={"Content-Type": "text/turtle"})
         try:
             fedora_url = urllib.request.urlopen(new_request).read().decode()
-            self.bf2uris[str(subject)] = fedora_url
-            self.index(rdflib.URIRef(fedora_url))
         except urllib.error.HTTPError as http_error:
-            print("Failed to add {}, Error={}\nTurtle=\n{}".format(
+            error_comment = "Failed to add {}, Error={}\nTurtle=\n{}".format(
                 subject,
                 http_error,
-                raw_turtle))
-            raise http_error
-
-
+                raw_turtle)
+            print(error_comment)
+            fedora_url = self.repository.create()
+            self.repository.insert(fedora_url, "owl:sameAs", str(subject))
+            ##self.repository.insert(fedora_url, "rdfs:comment", error_comment)
+        self.bf2uris[str(subject)] = fedora_url
+        self.index(rdflib.URIRef(fedora_url))
         return fedora_url
 
-    def generate_body(self, fedora_uri):
+    def generate_body(self, graph):
         """Function takes a Fedora URI, filters the Fedora graph and returns a dict
         for indexing into Elastic search
 
         Args:
-            fedora_uri(string): Fedora URI
+            graph(rdflib.Graph): Fedora Graph
 
         Returns:
             dict: Dictionary of values filtered for Elastic Search indexing
@@ -340,8 +341,6 @@ class GraphIngester(object):
                     body[key].append(get_id_or_value(row))
             else:
                 body[key] = [get_id_or_value(value),]
-        graph = default_graph()
-        graph.parse(fedora_uri)
         body = dict()
         bf_json = json.loads(
             graph.serialize(
@@ -415,7 +414,7 @@ class GraphIngester(object):
         if not str(fcrepo_uri) in self.uris2uuid:
             self.uris2uuid[str(fcrepo_uri)] = doc_id
         doc_type = guess_search_doc_type(fcrepo_graph, fcrepo_uri)
-        body = self.generate_body(fcrepo_uri)
+        body = self.generate_body(fcrepo_graph)
         self.elastic_search.index(
             index='bibframe',
             doc_type=doc_type,

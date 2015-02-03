@@ -22,16 +22,16 @@ import rdflib
 import urllib.request
 
 from flask import abort, Flask, jsonify, render_template, redirect, request
-#from flask.ext.elastic import Elastic
 from elasticsearch import Elasticsearch
 import sys
-sys.path.append("C:\\Users\\jernelson\\Development\\flask-fedora")
 import flask_fedora_commons
 
-app = Flask(__name__)
+app = Flask(__name__,  instance_relative_config=True)
+app.config.from_pyfile('config.py')
+
 repository = flask_fedora_commons.Repository(app)
-#es_search = Elastic(app)
-es_search = Elasticsearch()
+
+es_search = Elasticsearch([app.config.get("ELASTIC_SEARCH")])
 
 @app.template_filter('name')
 def guess_name(entity):

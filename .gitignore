@@ -2,7 +2,11 @@
 *.swp
 *.jar
 .DS*
+*egg-info*
 __pycache__
+instance/*
+dist/*
+build/*
 fedora/fcrepo4-data/*
 fedora/*.war
 search/data

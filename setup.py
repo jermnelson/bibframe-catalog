@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 import os
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -20,14 +20,16 @@ setup(
         'Programming Language :: Python :: 3.4',
     ],
     keywords='bibframe catalog fedora elastic search',
-    packages = 'catalog',
+    packages = find_packages(),
+    include_package_data=True,
+    platforms='any',
     install_requires=[
+        'Flask',
+        'Flask-Negotiate',
         'pymarc',
-        'flask_fedora_commons',
-        'elasticsearch'],
-    entry_points={
-
-    }
+        'Flask-FedoraCommons',
+        'elasticsearch',
+        'rdflib']
 )
 
 

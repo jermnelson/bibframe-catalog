@@ -1,4 +1,5 @@
-#!/home/jermnelson_gmail_com/bf-dev-env/bin/python
+#!/home/jpnelson/bf-env/bin/python
+##!/home/jermnelson_gmail_com/bf-dev-env/bin/python
 """
 Name:        runserver
 Purpose:     Runs BIBFRAME Access and Discovery Catalog
@@ -10,10 +11,14 @@ Copyright:   (c) Jeremy Nelson 2014
 Licence:     GPLv3
 """
 import argparse
-try:
-    from bibframe_catalog import app
-except ImportError:
-    from __init__ import app
+from werkzeug.serving import run_simple
+from werkzeug.wsgi import DispatcherMiddleware
+
+from catalog import app
+
+application = DispatcherMiddleware(
+    app
+)
 
 def main(args):
     debug = args.debug or True

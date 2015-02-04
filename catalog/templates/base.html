@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block head_title %}BIBFRAME Access and Discovery Catalog{% endblock %}</title>
     {% block css %}
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
     <style>
       body {
         font-family: 'Raleway', sans-serif;
@@ -16,7 +17,10 @@
     {% block more_css %}{% endblock %}
 
   </head>
-  <body>
+  <body class="container">
+   {% block header %}
+     {% include 'snippets/header.html' %}
+   {% endblock %}
    {% block body %}
     <h1>BIBFRAME Search and Display Catalog <small>v</small>{{ version }}</h1>
     <p>Placeholder Main page</p>
@@ -79,6 +83,8 @@
     </table>
     </div>
    {% endblock %}
-
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+  
   </body>
 </html>

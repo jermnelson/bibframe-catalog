@@ -1,9 +1,13 @@
-<basic-search class = "row">
+<section class="row">
 
-<form role="form">
-  <div class="form-group">
-    <label for="name">Search</label>
-    <textarea class="form-control" rows="3"></textarea>
-  </div>
-</form>
-</basic-search>
+   <div class="col-md-6 col-md-offset-3">
+	<form role="form" method="POST" action="{{ url_for('search') }}">
+	  <div class="form-group">
+	    <label for="name">Search</label>
+	    <input type="text" name="phrase" class="form-control"><br>
+            <button class="btn btn-primary btn-lg center-block">Go</button>
+	  </div>
+	</form>
+   </div>
+
+</section>

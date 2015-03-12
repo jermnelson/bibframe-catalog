@@ -8,16 +8,13 @@
     <title>{% block head_title %}BIBFRAME Access and Discovery Catalog{% endblock %}</title>
     {% block css %}
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
-    <style>
-      body {
-        font-family: 'Raleway', sans-serif;
-      }
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bibcat.css') }}">
     </style>
     {% endblock %}
     {% block more_css %}{% endblock %}
 
   </head>
-  <body class="container">
+  <body class="bibcat-background">
    {% block header %}
      {% include 'snippets/header.html' %}
    {% endblock %}

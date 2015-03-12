@@ -1,0 +1,31 @@
+.bibcat-background {
+  background-color: #40474F;
+}
+
+.bibcat-text {
+  color: #4DBAC7;
+  font-family: 'Arial Black', sans-serif;
+  text-transform: uppercase;
+}
+
+.bibcat-title {
+  color: #FBCE35;
+  font-family: 'Arial Black', sans-serif;
+  text-transform: uppercase;
+}
+
+button.bibcat-search {
+  background-color: #327C7F;
+  color: #FBCE35;
+  font-family: 'Arial Black', sans-serif;
+  text-transform: uppercase;
+}
+
+h1.bibcat {
+  font-size: 4em;
+  font-weight: bold;
+}
+
+hr.bibcat {
+  height: 5px;
+}

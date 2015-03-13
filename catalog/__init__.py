@@ -117,15 +117,15 @@ def resource(uuid, ext='html'):
             for i,row in enumerate(value):
                 if es_search.exists(id=row, index='bibframe'):
                     result[key][i] = es_search.get_source(id=row, index='bibframe')
-        fedora_url = result.get('fcrepo:hasLocation')[0]
-        fedora_graph = rdflib.Graph().parse(fedora_url)
+        #fedora_url = result.get('fcrepo:hasLocation')[0]
+        #fedora_graph = rdflib.Graph().parse(fedora_url)
         related = es_search.search(q=uuid, index='bibframe')
         if ext.startswith('json'):
             return fedora_graph.serialize(format='json-ld', indent=2).decode()
         return render_template(
             'detail.html',
             entity=result,
-            graph=fedora_graph,
+            #graph=fedora_graph,
             related=related,
             version=__version__
         )

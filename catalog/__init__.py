@@ -33,6 +33,14 @@ repository = flask_fedora_commons.Repository(app)
 
 es_search = Elasticsearch([app.config.get("ELASTIC_SEARCH")])
 
+@app.template_filter('creator')
+def creator(entity):
+    name = ''
+    if 'bf:creator' in entity:
+        name = ' '.join(
+            [creator['bf:label'][0] for creator in entity['bf:creator']])
+    return name
+
 @app.template_filter('name')
 def guess_name(entity):
     """Name filter attempts to serialize a BIBFRAME entity"""

@@ -1,18 +1,32 @@
-<ul class="media-list" data-bind="foreach: searchResults" id="Results">
-  <li class="media" itemscope data-bind="attr: { itemtype: itemType }"> 
+<hr class="bibcat" style="background-color: #4DBAC7;">
+<section class="container">
+<ul class="media-list" id="Results">
+  {% for hit in result['hits']['hits'] %}
+  {% set entity = hit['_source'] %}
+  <li class="media" itemscope> 
    <h3 class="media-heading bibcat-title"> 
-     <span data-bind="text: titleValue"></span> / <span data-bind="text: authorValue"></span>
+     <a class="bibcat-title" href="{{ entity['fcrepo:uuid'][0] }}">
+     {# <span data-bind="text: titleValue"></span> / <span data-bind="text: authorValue"></span> #}
+      {{ entity|name }} {% if 'bf:creator' in entity %}/ {{ entity|creator }}{% endif %}
+     </a>
    </h3>
    <div class="media-left">
      <a href="#" itemscope itemtype="http://bibframe.org/vocab/CoverArt">
-      <img data-bind="attr: { src: coverArtThumb }" class="media-object">
+      <img src="{{ url_for('static', filename='images/cover-placeholder.png') }}" class="media-object">
      </a>
    </div>
-   <article class="media-body" data-bind="foreach: locations">
-     <h4 class="media-heading">
+   <article class="media-body" {# data-bind="foreach: locations" #} >
+     <h4 class="media-heading bibcat-text">{{ entity.type.0[3:] }}</h4>
+     <h4 class="media-heading bibcat-text">Location 1 - 1.2 Miles - Map it</h4>
+
+    {#
+     <h4 class="media-heading bibcat-text">Location 1
        <a class="bibcat-text" data-bind="attr: { href: locationURL, text: locationText }"></a> -
        <a class="bibcat-text" data-bind="attr: { href: locationMap }">Map it</a>
      </h4>
+     #}
    </article> 
- </li>
+  </li>
+ {% endfor %}
 </ul> 
+</section>

@@ -1,29 +1,5 @@
 {% extends 'base.html' %}
-
 {% block body %}
-<h1>{{ search_type }} Search Results for <em>{{ phrase }}</em></h1>
-<h3>Total:{{ result['hits']['total'] }}</h3>
-<ol>
-{% for hit in result['hits']['hits'] %}
-{% set entity = hit['_source'] %}
-
-<li>
-{#
-<dl>
-{% for key,val in entity.items() %}
-  <dt>{{ key }}</dt>
-  <dd>{{ val }}</dd>
-
-{% endfor %}
-</dl>
-#}
-{% for type in entity['type'] %}<em>{{ type }}</em>{% endfor %} 
-<a href="{{ entity['fcrepo:uuid'][0] }}">
-{{ entity|name }}
-</a>
-</li>
-
-{% endfor %}
-</ol>
-
+{%include 'snippets/basic-search.html'%}
+{%include 'snippets/brief-result.html'%}
 {% endblock %}

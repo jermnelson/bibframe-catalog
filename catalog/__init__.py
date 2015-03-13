@@ -33,6 +33,12 @@ repository = flask_fedora_commons.Repository(app)
 
 es_search = Elasticsearch([app.config.get("ELASTIC_SEARCH")])
 
+@app.template_filter('bf_type')
+def bibframe_type(entity):
+    if 'type' in entity:
+        return entity.get('type')[3:]
+    return "Unknown"
+
 @app.template_filter('creator')
 def creator(entity):
     name = ''

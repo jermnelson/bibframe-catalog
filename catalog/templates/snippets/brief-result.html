@@ -16,7 +16,7 @@
      </a>
    </div>
    <article class="media-body" {# data-bind="foreach: locations" #} >
-     <h4 class="media-heading bibcat-text">{{ entity.type.0[3:] }}</h4>
+     <h4 class="media-heading bibcat-text">{{ entity|bf_type }}</h4>
      <h4 class="media-heading bibcat-text">Location 1 - 1.2 Miles - Map it</h4>
 
     {#

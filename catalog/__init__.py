@@ -120,7 +120,8 @@ def resource(uuid, ext='html'):
         #fedora_graph = rdflib.Graph().parse(fedora_url)
         related = es_search.search(q=uuid, index='bibframe')
         if ext.startswith('json'):
-            return fedora_graph.serialize(format='json-ld', indent=2).decode()
+            #return fedora_graph.serialize(format='json-ld', indent=2).decode()
+            return jsonify(result)
         return render_template(
             'detail.html',
             entity=result,

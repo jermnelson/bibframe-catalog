@@ -80,7 +80,6 @@ def search():
     """Search view for the application"""
     search_type = request.form.get('search_type', 'kw')
     phrase = request.form.get('phrase')
-    print("Phrase {}".format(phrase))
     if search_type.startswith("kw"):
         result = es_search.search(q=phrase, index='bibframe')
     else:

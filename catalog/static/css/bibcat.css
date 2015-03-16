@@ -11,8 +11,8 @@
 .bibcat-title {
   color: #FBCE35;
   font-family: 'Arial Black', sans-serif;
-  text-transform: none;
-  padding-top: 10px;
+  text-transform: uppercase;
+  padding-top: 15px;
 }
 
 button.bibcat-search {

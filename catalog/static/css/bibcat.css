@@ -12,6 +12,7 @@
   color: #FBCE35;
   font-family: 'Arial Black', sans-serif;
   text-transform: uppercase;
+  padding-top: 10px;
 }
 
 button.bibcat-search {

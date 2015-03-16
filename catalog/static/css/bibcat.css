@@ -1,11 +1,12 @@
-.body {font-weight: 700;}
+body {font-weight: 700;}
+
 .bibcat-background {
   background-color: #40474F;
 }
 
 .bibcat-text {
   color: #4DBAC7;
-   font-family: "futura-pt", sans-serif;
+  font-family: "futura-pt", sans-serif;
   text-transform: uppercase;
 }
 

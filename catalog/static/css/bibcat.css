@@ -11,7 +11,7 @@
 .bibcat-title {
   color: #FBCE35;
   font-family: 'Arial Black', sans-serif;
-  text-transform: uppercase;
+  text-transform: none;
   padding-top: 10px;
 }
 

@@ -1,23 +1,26 @@
+body {font-weight: 700;}
+
 .bibcat-background {
   background-color: #40474F;
 }
 
 .bibcat-text {
   color: #4DBAC7;
-  font-family: 'Arial Black', sans-serif;
+  font-family: "futura-pt", sans-serif;
   text-transform: uppercase;
 }
 
 .bibcat-title {
   color: #FBCE35;
-  font-family: 'Arial Black', sans-serif;
+  font-family: "futura-pt", sans-serif;
   text-transform: uppercase;
+  padding-top: 15px;
 }
 
 button.bibcat-search {
   background-color: #327C7F;
   color: #FBCE35;
-  font-family: 'Arial Black', sans-serif;
+   font-family: "futura-pt", sans-serif;
   text-transform: uppercase;
 }
 

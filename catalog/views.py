@@ -1,5 +1,5 @@
 __author__ = "Jeremy Nelson"
-from flask import jsonify, render_template, request
+from flask import abort, jsonify, render_template, request
 from .forms import BasicSearch
 from . import app, es_search, repository, __version__
 

@@ -37,7 +37,9 @@ es_search = Elasticsearch([app.config.get("ELASTIC_SEARCH")])
 @app.template_filter('bf_type')
 def bibframe_type(entity):
     if 'type' in entity:
-        return entity.get('type')[3:]
+        entity_type = entity.get('type', [])
+        if len(entity_type) > 0:
+            return entity_type[0][3:]
     return "Unknown"
 
 @app.template_filter('creator')

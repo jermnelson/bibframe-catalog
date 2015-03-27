@@ -1,7 +1,7 @@
 __author__ = "Jeremy Nelson"
 from flask import abort, jsonify, render_template, request
 from .forms import BasicSearch
-from . import app, es_search, repository, __version__
+from . import app, es_search, __version__
 
 @app.route('/search', methods=['POST', 'GET'])
 def search():
@@ -66,7 +66,7 @@ def index():
     """Default view for the application"""
     return render_template(
         "index.html",
-        repository=repository,
+        #repository=repository,
         search=es_search,
         basic_search=BasicSearch(),
         version=__version__)

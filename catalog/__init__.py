@@ -25,12 +25,12 @@ from flask import abort, Flask, jsonify, render_template, redirect, request
 from elasticsearch import Elasticsearch
 from .forms import BasicSearch
 import sys
-import flask_fedora_commons
+#import flask_fedora_commons
 
 app = Flask(__name__,  instance_relative_config=True)
 app.config.from_pyfile('config.py')
 
-repository = flask_fedora_commons.Repository(app)
+#repository = flask_fedora_commons.Repository(app)
 
 es_search = Elasticsearch([app.config.get("ELASTIC_SEARCH")])
 

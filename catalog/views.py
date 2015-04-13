@@ -29,9 +29,10 @@ def search():
     return jsonify(result)
     #return "{} phrase={}".format(search_type, phrase)
 
-@app.route("/<uuid>.<ext>")
+@app.route("/<entity>/<uuid>.<ext>")
+@app.route("/<uuid>.<ext>", defaults={"entity": "Work", "ext": "html"})
 @app.route("/<uuid>")
-def resource(uuid, ext='html'):
+def resource(uuid, entity, ext='html'):
     """Detailed view for a single resource
 
     Args:

@@ -1,3 +1,38 @@
+var bfAuthorities = new Bloodhound({
+  datumTokenizer: Bloodhound.tokenizers.obj.whitespace('authority'),
+  queryTokenizer: Bloodhound.tokenizers.whitespace,
+  remote: '/typeahead?q=%QUERY&type=Authority'
+});
+
+var bfInstances = new Bloodhound({
+  datumTokenizer: Bloodhound.tokenizers.obj.whitespace('instance'),
+  queryTokenizer: Bloodhound.tokenizers.whitespace,
+  remote: '/typeahead?q=%QUERY&type=Instance'
+});
+
+var bfPeople = new Bloodhound({
+  datumTokenizer: Bloodhound.tokenizers.obj.whitespace('person'),
+  queryTokenizer: Bloodhound.tokenizers.whitespace,
+  remote: '/typeahead?q=%QUERY&type=Person'
+ });
+
+
+var bfTopics = new Bloodhound({
+  datumTokenizer: Bloodhound.tokenizers.obj.whitespace('topic'),
+  queryTokenizer: Bloodhound.tokenizers.whitespace,
+  remote: '/typeahead?q=%QUERY&type=Topic'
+ });
+
+
+var bfWorks = new Bloodhound({
+  datumTokenizer: Bloodhound.tokenizers.obj.whitespace('work'),
+  queryTokenizer: Bloodhound.tokenizers.whitespace,
+  remote: '/typeahead?q=%QUERY&type=Work'
+ });
+
+
+ 
+
 var Result = function(search_result) {
    this.id = search_result['_id'];
    var raw_result = search_result['_source'];

@@ -1,10 +1,11 @@
 __author__ = "Jeremy Nelson"
 
 import io
+import json
 import mimetypes
 import requests
 from flask import abort, jsonify, render_template, request
-from flask import send_file
+from flask import session, send_file
 from .forms import BasicSearch
 from . import app, datastore_url, es_search, __version__, datastore_url, PREFIX
 
@@ -44,6 +45,30 @@ def search():
          phrase=phrase)
     #return jsonify(result)
     #return "{} phrase={}".format(search_type, phrase)
+
+@app.route("/typeahead", methods=['GET', 'POST'])
+def typeahead_search():
+    """Search view for typeahead search"""
+    output = []
+    search_type = request.args.get('type')
+    phrase = request.args.get('q')
+    result = es_search.search(
+        q=phrase,
+        index='bibframe',
+        doc_type=search_type,
+        size=5)
+    key = search_type.lower()
+    print("Total {}".format(result.get('hits').get('total')))
+    for hit in result.get('hits').get('hits'):
+        row = {key: None}
+        graph = hit['_source']
+        if 'bf:label' in graph:
+            row[key] = graph['bf:label'][0]
+        if 'bf:title' in graph:
+            row[key] = graph['bf:title'][0]
+        if not row[key] is None:
+            output.append(row)
+    return json.dumps(output)
 
 @app.route("/CoverArt/<uuid>.<ext>", defaults={"ext": "jpg"})
 def cover(uuid, ext):

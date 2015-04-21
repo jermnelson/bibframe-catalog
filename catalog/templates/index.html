@@ -6,3 +6,45 @@
   {#include 'snippets/brief-result.html'#}
 
 {% endblock %}
+
+{% block activity %}
+<script>
+   ko.applyBindings(new CatalogViewModel());
+   //bfInstances.initialize();
+   bfPeople.initialize();
+   bfWorks.initialize(); 
+   //bfTitles.initialize();
+   bfTopics.initialize();
+
+   $('#bf_typeahead .typeahead').typeahead({
+      hightlight: true
+   },
+   {
+      name: 'bf-works',
+      displayKey: 'work',
+      source: bfWorks.ttAdapter(),
+      templates: {
+       header: '<h3 class="bg-info">Works</h3>'
+      }
+   },
+   {
+      name: 'bf-people',
+      displayKey: 'person',
+      source: bfPeople.ttAdapter(),
+      templates: {
+       header: '<h3 class="bg-info">People</h3>'
+      }
+   },
+   {
+      name: 'bf-topics',
+      displayKey: 'topic',
+      source: bfTopics.ttAdapter(),
+      templates: {
+       header: '<h3 class="bg-info">Topics</h3>'
+      }
+
+  });
+
+</script> 
+
+{% endblock %}

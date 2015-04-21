@@ -36,6 +36,22 @@ PREFIX = """PREFIX bf: <http://bibframe.org/vocab/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>"""
 
+GET_CREATORS_INSTANCE_SPARQL = """{}
+SELECT DISTINCT ?creator_name
+WHERE {{{{
+   <{{}}> bf:instanceOf ?work .
+   ?work bf:creator ?creator .
+   ?creator bf:label ?creator_name .
+}}}}""".format(PREFIX)
+
+GET_CREATORS_WORK_SPARQL = """{}
+SELECT DISTINCT ?creator_name
+WHERE {{{{
+  <{{}}>  bf:creator ?creator .
+   ?creator bf:label ?creator_name .
+}}}}""".format(PREFIX)
+
+
 #! Both cover sparql should be combined into a single 
 #! SPARQL statement.
 GET_INSTANCE_COVER_SPARQL = """{}
@@ -90,6 +106,13 @@ SELECT DISTINCT ?uuid
 WHERE {{{{
   ?held_item bf:holdingFor <{{}}> .
   ?held_item fedora:uuid ?uuid .
+}}}}""".format(PREFIX)
+
+ORG_NAME_SPARQL = """{}
+SELECT DISTINCT ?name
+WHERE {{{{
+  <{{}}> bf:label ?name . 
+
 }}}}""".format(PREFIX)
 
 WORK_HELD_ITEMS_SPARQL = """{}
@@ -164,7 +187,6 @@ def held_items(entity):
                                           item=held_item)
             else:
                 sparql= HELD_ITEM_SPARQL.format(uuid)
-                print(sparql)
                 held_item_result = requests.post(
                     "{}/triplestore".format(datastore_url), 
                     data={"sparql": sparql})
@@ -173,13 +195,27 @@ def held_items(entity):
                         'snippets/held-item.html', 
                         item=held_item_result.json()['results']['bindings'][0])
                 else:
-                    print(held_item_result.text)
                     output = "Cannot find {} for {}".format(uuid, fedora_url)
     return output
 
 
         
-        
+@app.template_filter('org_name')
+def get_org_name(org_url):
+    name = 'Not Found'
+    if type(org_url) == list:
+        sparql = ORG_NAME_SPARQL.format(org_url[0])
+    else:
+        sparql = ORG_NAME_SPARQL.format(org_url)
+    result = requests.post(
+               "{}/triplestore".format(datastore_url), 
+               data={"sparql": sparql})
+    if result.status_code < 400:
+        results = result.json()['results']
+        if len(results['bindings']) > 0:
+            name = results['bindings'][0]['name']['value']
+    return name
+
 
 
 @app.template_filter('name')
@@ -219,22 +255,32 @@ def generate_title_author(entity):
         entity -- Dictionary of entity info
     """
     output = str()
+    creators = []
+    if type(entity['fcrepo:hasLocation'][0]) == str:
+        entity_url = entity['fcrepo:hasLocation'][0]
+    else:
+        entity_url = entity['fcrepo:hasLocation'][0]['value']
     if 'bf:workTitle' in entity:
         sparql = GET_TITLEVALUE_SPARQL.format(entity['bf:workTitle'][0])
         result = requests.post(
            "{}/triplestore".format(datastore_url), 
            data={"sparql": sparql})
         output += result.json()['results']['bindings'][0]['titleValue']['value']
+        creator_sparql = GET_CREATORS_WORK_SPARQL.format(entity_url)
     if 'bf:titleStatement' in entity:
         output += ",".join(entity['bf:titleStatement'])
-    output += " / "
-    for creator_url in entity.get('bf:creator', []):
-        sparql = GET_LABEL_SPARQL.format(creator_url)
-        result = requests.post(
-           "{}/triplestore".format(datastore_url), 
-           data={"sparql": sparql})
-        for row in result.json()['results']['bindings']:
-            output += row['label']['value']    
+        creator_sparql = GET_CREATORS_INSTANCE_SPARQL.format(entity_url)
+    creator_result = requests.post(
+        "{}/triplestore".format(datastore_url),
+        data={"sparql": creator_sparql})
+    if creator_result.status_code < 400:
+        results = creator_result.json()['results']
+        for row in results['bindings']:
+            if 'value' in row:
+                creators.append(row.get('value'))
+            elif 'creator_name' in row:
+                creators.append(row.get('creator_name')['value'])
+    output += " / {}".format(' '.join(creators))
     return output
 
 from .views import *

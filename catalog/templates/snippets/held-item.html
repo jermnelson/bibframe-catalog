@@ -1,0 +1,11 @@
+<h3 class="bibcat-text">
+{% if 'bf:label' in item %}
+   {{ item.get('bf:holdingFor')|name }} 
+   {% if not 'bf:circulationStatus' in item %}
+     AVAILABLE
+   {% endif %} 
+{% else %}
+{{ item.org_label.value }} {{ item.circ_status.value }} 
+  <a href="#" class="bibcat-text" onclick="alert('Display map for {{ item.item_id.value }}')">Map it</a>
+{% endif %}
+</h3>

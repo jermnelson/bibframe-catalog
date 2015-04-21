@@ -1,31 +1,25 @@
-<hr class="bibcat" style="background-color: #4DBAC7;" data-bind="visible: searchResults().length > 0">
+<hr class="bibcat" style="background-color: #4DBAC7;">
 <section class="container">
-<ul class="media-list" id="Results" data-bind="foreach: searchResults">
-  {# for hit in result['hits']['hits'] %}
-  {% set entity = hit['_source'] #}
+<ul class="media-list" id="Results" {# data-bind="foreach: searchResults" #}>
+  {% for hit in result['hits']['hits'] %}
+  {% set entity = hit['_source'] %}
   <li class="media" itemscope> 
    <h3 class="media-heading bibcat-title"> 
-     {# <a class="bibcat-title" href="{{ entity['fcrepo:uuid'][0] }}"> #}
-     <a class="bibcat-title" data-bind="attr: { 'href': id }">
-     <span data-bind="text: title"></span> / <span data-bind="text: author"></span> 
-      {#{ entity|name }} {% if 'bf:creator' in entity %}/ {{ entity|creator }}{% endif #}
+     <a class="bibcat-title" href="{{ url_for('detail', entity='Instance', uuid=entity.get('fcrepo:uuid')[0], ext='html') }}">
+       {{ entity|title_author }}
      </a>
    </h3>
    <div class="media-left">
      <a href="#" itemscope itemtype="http://bibframe.org/vocab/CoverArt">
-      <img src="{{ url_for('static', filename='images/cover-placeholder.png') }}" class="media-object">
+      <img src="{{ entity|cover_art }}" class="media-object">
      </a>
    </div>
-   <article class="media-body" data-bind="foreach: locations">
-     {#<h4 class="media-heading bibcat-text">{{ entity|bf_type }}</h4>#}
-     <h4 class="media-heading bibcat-text">Location 1 - 1.2 Miles - Map it</h4>
-
-     <h4 class="media-heading bibcat-text">Location 1
-       <a class="bibcat-text" data-bind="attr: { href: locationURL, text: locationText }"></a> -
-       <a class="bibcat-text" data-bind="attr: { href: locationMap }">Map it</a>
+   <article class="media-body">
+     <h4 class="media-heading bibcat-text">
+     {{ entity|held_items|safe }}
      </h4>
    </article> 
   </li>
- {# endfor #}
+ {% endfor %}
 </ul> 
 </section>

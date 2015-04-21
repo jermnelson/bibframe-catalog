@@ -18,14 +18,30 @@
 <div class="row">
   <article class="col-md-12 col-sm-12">
    <h2 class="bibcat-title">{{ entity|title_author }}</h2>
-   {{ entity }}
   </article>
 </div>
 <div class="row">
-  <section class="col-md-4 col-sm-6">
+  <section class="col-md-2 col-sm-3">
     <img src="{{ entity|cover_art }}" class="image">
-
-  <section>
+    <p class="bibcat-title">
+    {% for prop in ['bf:extent', 'bf:dimensions', 'bf:edition'] %}
+       {{ entity.get(prop, [''])[0] }}
+    {% endfor %}
+    </p>
+  </section>
+  <article class="col-md-6 col-sm-6">
+   {{ entity|held_items|safe }}
+  </article>
+</div>
+<div class="row">
+ <article class="col-md-8">
+  {% if 'bf:note' in entity %}
+  <h3 class="bibcat-text">Notes</h3>
+   {% for note in entity['bf:note'] %}
+    <p class="bibcat-text">{{ note }}</p>
+   {% endfor %}
+  {% endif %}
+ </article>
 </div>
 {#
 <article>

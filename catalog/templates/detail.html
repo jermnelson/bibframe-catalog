@@ -9,6 +9,25 @@
 {% endblock %}
 
 {% block body %}
+<div class="row">
+  <section class="col-md-4">
+    <h3 class="back-to-results"><a href="#">Back to Results</a></h3>
+  </section>   
+</div>
+<hr class="back-to-results">
+<div class="row">
+  <article class="col-md-12 col-sm-12">
+   <h2 class="bibcat-title">{{ entity|title_author }}</h2>
+   {{ entity }}
+  </article>
+</div>
+<div class="row">
+  <section class="col-md-4 col-sm-6">
+    <img src="{{ entity|cover_art }}" class="image">
+
+  <section>
+</div>
+{#
 <article>
 <h2 class="bibcat-title"><em>{% for type in entity['type'] %}{{ type }}{% endfor %} Display <small>v</smalL>{{ version }}</em></h2>
 <h1 class="bibcat-title">{{ entity|name }}</h1>
@@ -25,7 +44,6 @@
  <dd>{{ val }}</dd>
  {% endfor %}
 </dl>
-{#
 <a href="rdf"></a>
 <h3>Fedora RDF</h3>
 <table class="table_border">
@@ -40,7 +58,6 @@
  </tr>
  {% endfor %}
 </table>
-#}
 <a name="related"></a>
 <h3 class="bibcat-title">Related BIBFRAME Resources</h3>
 <section class="well">
@@ -61,4 +78,5 @@
 </ol>
 </section>
 </article>
+#}
 {% endblock %} 

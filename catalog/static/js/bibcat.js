@@ -1,6 +1,8 @@
 var Result = function(search_result) {
    this.id = search_result['_id'];
    var raw_result = search_result['_source'];
+   console.log(raw_result);
+
    switch(raw_result) {
      case 'bf:instanceTitle' in raw_result:
         console.log("Found bf:instanceTitle" + raw_result['bf:instanceTitle'][0]);

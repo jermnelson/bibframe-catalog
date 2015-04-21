@@ -29,8 +29,20 @@ h1.bibcat {
   font-weight: bold;
 }
 
+h3.back-to-results {
+  color: #4DBAC7;
+  text-transform: lowercase;
+}
+
 hr.bibcat {
   background-color: white;
   border-width: 1px 0;
   height: 5px !important;
+}
+
+hr.back-to-results {
+  background-color: #4DBAC7;
+  border-width: 1px 0;
+  height: 5px !important;
+ 
 }

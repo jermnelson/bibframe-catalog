@@ -1,5 +1,6 @@
 __author__ = "Jeremy Nelson"
 
+import base64
 import io
 import json
 import mimetypes
@@ -48,7 +49,8 @@ def typeahead_search():
     es_dsl = {
         "query": {
             "match": {
-                "bf:authorizedAccessPoint": phrase
+                "bf:authorizedAccessPoint": phrase, 
+                "bf:label": phrase
             }
         },
         "sort": { "bf:authorizedAccessPoint": "desc" }
@@ -72,20 +74,15 @@ def typeahead_search():
 
 @app.route("/CoverArt/<uuid>.<ext>", defaults={"ext": "jpg"})
 def cover(uuid, ext):
-    sparql = COVER_ART_SPARQL.format(uuid)
-    cover_uri_result = requests.post(
-        "{}/triplestore".format(datastore_url),
-        data={"sparql": sparql})
-    if cover_uri_result.status_code < 400:
-         results = cover_uri_result.json()['results']
-         image_url = results['bindings'][0]['cover']['value'].split("/fcr:metadata")[0] 
-         get_image_result = requests.get(image_url)
-         raw_image = get_image_result.content
-         file_name = '{}.{}'.format(uuid, ext)
-         return send_file(io.BytesIO(raw_image),
-                          attachment_filename=file_name,
-                          mimetype=mimetypes.guess_type(file_name)[0])
-    abort(500)
+    if es_search.exists(id=uuid, index='bibframe'):
+        cover = es_search.get_source(id=uuid, index='bibframe')
+        raw_image = base64.decode(
+            cover.get('hits').get('hits')[0]['bf:coverArt'][0])
+        file_name = '{}.{}'.format(uuid, ext)
+        return send_file(io.BytesIO(raw_image),
+                         attachment_filename=file_name,
+                         mimetype=mimetypes.guess_type(file_name)[0])
+    abort(404)
 
 @app.route("/<entity>/<uuid>", defaults={"ext": "html"})
 @app.route("/<entity>/<uuid>.<ext>", 

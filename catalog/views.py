@@ -37,14 +37,7 @@ def search():
                 if es_search.exists(id=row, index='bibframe'):
                     hit['_source'][key][i] = es_search.get_source(id=row, index='bibframe')
 
-    return render_template(
-        'results.html', 
-         search_type=search_type, 
-         basic_search=BasicSearch(),
-         result=result, 
-         phrase=phrase)
-    #return jsonify(result)
-    #return "{} phrase={}".format(search_type, phrase)
+    return jsonify(result)
 
 @app.route("/typeahead", methods=['GET', 'POST'])
 def typeahead_search():
@@ -52,13 +45,20 @@ def typeahead_search():
     output = []
     search_type = request.args.get('type')
     phrase = request.args.get('q')
+    es_dsl = {
+        "query": {
+            "match": {
+                "bf:authorizedAccessPoint": phrase
+            }
+        },
+        "sort": { "bf:authorizedAccessPoint": "desc" }
+    }
     result = es_search.search(
-        q=phrase,
+        body=es_dsl,
         index='bibframe',
         doc_type=search_type,
         size=5)
     key = search_type.lower()
-    print("Total {}".format(result.get('hits').get('total')))
     for hit in result.get('hits').get('hits'):
         row = {key: None}
         graph = hit['_source']
@@ -85,7 +85,6 @@ def cover(uuid, ext):
          return send_file(io.BytesIO(raw_image),
                           attachment_filename=file_name,
                           mimetype=mimetypes.guess_type(file_name)[0])
-    print(cover_uri_result.status_code)
     abort(500)
 
 @app.route("/<entity>/<uuid>", defaults={"ext": "html"})

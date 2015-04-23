@@ -2,15 +2,15 @@
 
 {% block body %}
 
-  {%include 'snippets/basic-search.html'%}
-  {#include 'snippets/brief-result.html'#}
+  {%include 'snippets/basic-search.html' %}
+  {%include 'snippets/brief-result.html' %}
 
 {% endblock %}
 
 {% block activity %}
 <script>
    ko.applyBindings(new CatalogViewModel());
-   //bfInstances.initialize();
+   bfInstances.initialize();
    bfPeople.initialize();
    bfWorks.initialize(); 
    //bfTitles.initialize();
@@ -25,6 +25,14 @@
       source: bfWorks.ttAdapter(),
       templates: {
        header: '<h3 class="bg-info">Works</h3>'
+      }
+   },
+   {
+      name: 'bf-instance',
+      displayKey: 'instance',
+      source: bfInstances.ttAdapter(),
+      templates: {
+       header: '<h3 class="bg-info">Instances</h3>'
       }
    },
    {

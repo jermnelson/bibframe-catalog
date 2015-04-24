@@ -48,12 +48,15 @@ def typeahead_search():
     phrase = request.args.get('q')
     es_dsl = {
         "query": {
-            "match": {
-                "bf:authorizedAccessPoint": phrase, 
-                "bf:label": phrase
+          "bool": {
+            "should": [
+              {"match": { "bf:authorizedAccessPoint": phrase }},
+              {"match": { "bf:label": phrase }},
+              {"match": { "bf:title": phrase }} 
+            ]    
             }
-        },
-        "sort": { "bf:authorizedAccessPoint": "desc" }
+        }
+    #    "sort": { "bf:authorizedAccessPoint": "desc" }
     }
     result = es_search.search(
         body=es_dsl,

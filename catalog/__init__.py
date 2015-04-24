@@ -108,13 +108,6 @@ WHERE {{{{
   ?held_item fedora:uuid ?uuid .
 }}}}""".format(PREFIX)
 
-ORG_NAME_SPARQL = """{}
-SELECT DISTINCT ?name
-WHERE {{{{
-  <{{}}> bf:label ?name . 
-
-}}}}""".format(PREFIX)
-
 WORK_HELD_ITEMS_SPARQL = """{}
 SELECT DISTINCT ?uuid
 WHERE {{{{
@@ -200,22 +193,7 @@ def held_items(entity):
 
 
         
-@app.template_filter('org_name')
-def get_org_name(org_url):
-    name = 'Not Found'
-    if type(org_url) == list:
-        sparql = ORG_NAME_SPARQL.format(org_url[0])
-    else:
-        sparql = ORG_NAME_SPARQL.format(org_url)
-    result = requests.post(
-               "{}/triplestore".format(datastore_url), 
-               data={"sparql": sparql})
-    if result.status_code < 400:
-        results = result.json()['results']
-        if len(results['bindings']) > 0:
-            name = results['bindings'][0]['name']['value']
-    return name
-
+        
 
 
 @app.template_filter('name')

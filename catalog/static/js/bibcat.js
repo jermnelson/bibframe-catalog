@@ -34,11 +34,9 @@ var bfWorks = new Bloodhound({
  
 
 var Result = function(search_result) {
-   this.id = search_result['_id'];
-   this.url = search_result['_type'] + '/' + this.id;
-   var raw_result = search_result['_source'];
-
-   this.title = raw_result['bf:titleStatement'];
+   this.id = search_result['uuid'];
+   this.url = search_result['url'];
+   this.title = raw_result['title'];
 
 
    this.author = 'AUTHOR';

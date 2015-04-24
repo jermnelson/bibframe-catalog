@@ -9,6 +9,7 @@ from flask import abort, jsonify, render_template, request
 from flask import session, send_file
 from .forms import BasicSearch
 from . import app, datastore_url, es_search, __version__, datastore_url, PREFIX
+from . import guess_name
 
 COVER_ART_SPARQL = """{}
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>
@@ -17,11 +18,56 @@ WHERE {{{{
    ?cover fedora:uuid "{{}}"^^<http://www.w3.org/2001/XMLSchema#string>
 }}}}""".format(PREFIX)
 
+
+def __get_cover_art__(instance_uuid):
+    """Helper function takes an instance_uuid and searches for 
+    any cover art, returning the CoverArt ID and schema:isBasedOnUrl.
+    This may change in the future versions.
+
+    Args:
+        instance_uuid -- RDF fedora:uuid 
+    """
+    result = es_search.
+
+
+def __expand_instance__(instance):
+    """Helper function takes a search result Instance, queries index for 
+    creator and holdings information 
+
+    Args:
+        instance -- Elastic search hit result
+    """
+    output = dict()
+    work_id = instance.get('bf:instanceOf')
+    if not work_id:
+        return 
+    work = es_search.get(
+        id=work_id[0],  
+        index='bibframe', 
+        fields=['bf:creator', 
+                'bf:subject'])
+    if not work.get('found'):
+        return
+    creators = str()
+    for creator_id in work.get('fields', {}).get('bf:creator'):
+        creator = es_search.get(
+            id=creator_id, 
+            index='bibframe', 
+            fields=['bf:label'])
+        if creator.get('found'):
+            creators += ' '.join(creator.get('fields', 
+                                 {}).get('bf:label'))
+    if len(creators) > 0:
+        output['creators'] = creators
+    return output
+
+
 @app.route('/search', methods=['POST', 'GET'])
 def search():
     """Search view for the application"""
     search_type = request.form.get('search_type', 'kw')
     phrase = request.form.get('phrase')
+    results = []
     if search_type.startswith("kw"):
         result = es_search.search(q=phrase, index='bibframe', doc_type='Instance', size=5)
     else:
@@ -31,14 +77,22 @@ def search():
             doc_type='Work',
             size=5)
     for hit in result.get('hits').get('hits'):
+        item = {
+            "title": guess_name(hit),
+            "uuid": hit['_id'], 
+            "url": "{}/{}".format(hit['_type'], hit['_id']}
+        item.update(__expand_instance__(item))
         for key, value in hit['_source'].items():
             if key.startswith('fcrepo:uuid'):
                 continue
             for i,row in enumerate(value):
                 if es_search.exists(id=row, index='bibframe'):
-                    hit['_source'][key][i] = es_search.get_source(id=row, index='bibframe')
-
-    return jsonify(result)
+                    item[key] = es_search.get_source(id=row, index='bibframe')
+                    #hit['_source'][key][i] = es_search.get_source(id=row, index='bibframe')
+                else:
+                    item[key] = row
+        results.append(item)
+    return jsonify(results)
 
 @app.route("/typeahead", methods=['GET', 'POST'])
 def typeahead_search():

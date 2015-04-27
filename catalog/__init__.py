@@ -155,8 +155,12 @@ def get_cover(entity):
 def creator(entity):
     name = ''
     if 'bf:creator' in entity:
-        name = ' '.join(
-            [creator['bf:label'][0] for creator in entity['bf:creator']])
+        for creator in entity['bf:creator']:
+            if 'bf:label' in creator:
+                name += " {}".format(creator['bf:label'][0])
+            elif 'mads:authoritativeLabel' in creator:
+                name += "  {}".format(
+                    creator['mads:authoritativeLabel'][0])
     return name
 
 @app.template_filter('held_items')

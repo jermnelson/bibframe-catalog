@@ -6,7 +6,7 @@ Purpose:     The catalog package is a Flask application for the BIBFRAME
 Author:      Jeremy Nelson
 
 Created:     2014/11/12
-Copyright:   (c) Jeremy Nelson 2014
+Copyright:   (c) Jeremy Nelson 2014, 2015
 Licence:     GPLv3
 """
 __author__ = "Jeremy Nelson"
@@ -137,9 +137,9 @@ def bibframe_type(entity):
 def get_cover(entity):
     cover_url = url_for('static', filename='images/cover-placeholder.png')
     if 'bf:workTitle' in entity:
-        sparql = GET_WORK_COVER_SPARQL.format(entity['fcrepo:hasLocation'][0])
+        sparql = GET_WORK_COVER_SPARQL.format(entity['fedora:hasLocation'][0])
     else:
-        sparql = GET_INSTANCE_COVER_SPARQL.format(entity['fcrepo:hasLocation'][0])       
+        sparql = GET_INSTANCE_COVER_SPARQL.format(entity['fedora:hasLocation'][0])       
     result = requests.post(
        "{}/triplestore".format(datastore_url), 
        data={"sparql": sparql})
@@ -166,7 +166,7 @@ def creator(entity):
 @app.template_filter('held_items')
 def held_items(entity):
     output = str()
-    fedora_url = entity['fcrepo:hasLocation'][0]
+    fedora_url = entity['fedora:hasLocation'][0]
     if 'bf:workTitle' in entity:
         sparql = WORK_HELD_ITEMS_SPARQL.format(fedora_url)
     else:
@@ -195,10 +195,18 @@ def held_items(entity):
                     output = "Cannot find {} for {}".format(uuid, fedora_url)
     return output
 
+@app.template_filter('get_label')
+def get_label(uuid):
+    """get_label filter takes a uuid and attempt to retrieve the label
 
-        
-        
+    Args:
+        uuid -- Unique id used as key in Elastic Search
+    """
+    result = es_search.get(id=uuid, index='bibframe', fields=['bf:label'])
+    if 'fields' in result:
+        return ' '.join(result['fields']['bf:label'])
 
+    
 
 @app.template_filter('name')
 def guess_name(entity):
@@ -224,8 +232,8 @@ def guess_name(entity):
         if name.endswith(","):
             name = name[:-1]
     elif len(name) < 1:
-        if 'fcrepo:uuid' in entity:
-            name = ','.join(entity.get('fcrepo:uuid'))
+        if 'fedora:uuid' in entity:
+            name = ','.join(entity.get('fedora:uuid'))
     return name
 
 @app.template_filter('title_author')
@@ -238,10 +246,10 @@ def generate_title_author(entity):
     """
     output = str()
     creators = []
-    if type(entity['fcrepo:hasLocation'][0]) == str:
-        entity_url = entity['fcrepo:hasLocation'][0]
+    if type(entity['fedora:hasLocation'][0]) == str:
+        entity_url = entity['fedora:hasLocation'][0]
     else:
-        entity_url = entity['fcrepo:hasLocation'][0]['value']
+        entity_url = entity['fedora:hasLocation'][0]['value']
     if 'bf:workTitle' in entity:
         sparql = GET_TITLEVALUE_SPARQL.format(entity['bf:workTitle'][0])
         result = requests.post(

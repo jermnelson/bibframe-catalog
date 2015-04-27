@@ -9,13 +9,14 @@
    </h3>
    <div class="media-left">
      <a href="#" itemscope itemtype="http://bibframe.org/vocab/CoverArt">
-      <img src="{{ url_for('static', filename='images/cover-placeholder.png') }}" class="media-object">
+      <img data-bind="attr: { src: cover_url }"  class="media-object" {#src="{{ url_for('static', filename='images/cover-placeholder.png') }}"#} >
      </a>
    </div>
    <article class="media-body" data-bind="foreach: locations">
-     <h4 class="media-heading bibcat-text">Location 1
-       <a class="bibcat-text" data-bind="attr: { href: locationURL, text: locationText }"></a> -
-       <a class="bibcat-text" data-bind="attr: { href: locationMap }">Map it</a>
+     <h4 class="media-heading bibcat-text">
+       <span data-bind="text: location"></span>
+       <span data-bind="text: circulationStatus"></span> - 
+       <a class="bibcat-text" onclick="alert('Coming soon!')">Map it</a>
      </h4>
    </article> 
   </li>

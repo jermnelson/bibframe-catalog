@@ -36,11 +36,16 @@ var bfWorks = new Bloodhound({
 var Result = function(search_result) {
    this.id = search_result['uuid'];
    this.url = search_result['url'];
-   this.title = raw_result['title'];
-
-
-   this.author = 'AUTHOR';
+   this.title = search_result['title'];
+   this.author = search_result['creators'];
+   this.cover_url = '/static/images/cover-placeholder.png';
+   if('cover' in search_result) {
+     this.cover_url = search_result['cover']['src']; 
+   } 
    this.locations = [];
+   if('locations' in search_result) {
+       this.locations = search_result['locations']
+   }
 }
 
 // Using example from http://www.wiliam.com.au/wiliam-blog/twitters-typeahead-plugin-and-knockoutjs
@@ -94,16 +99,14 @@ function CatalogViewModel() {
     $.post(action, 
       data=data,
       function(datastore_response) {
-        
         if(datastore_response['message'] == 'error') {
           self.flash(datastore_response['body']);
         } else {
-          for(i in datastore_response['hits']['hits']) {
-            var row = datastore_response['hits']['hits'][i];
+          for(i in datastore_response['hits']) {
+            var row = datastore_response['hits'][i];
             self.searchResults.push(new Result(row));
           }
         }
-       console.log("Finished search catalog " + self.searchResults().length);
 
      });
   }

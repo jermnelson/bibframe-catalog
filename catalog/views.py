@@ -100,7 +100,7 @@ def __expand_instance__(instance):
     if not work.get('found'):
         return {}
     creators = str()
-    for creator_id in work.get('fields').get('bf:creator', []):
+    for creator_id in work.get('fields', {}).get('bf:creator', []):
         creator = es_search.get(
             id=creator_id, 
             index='bibframe', 

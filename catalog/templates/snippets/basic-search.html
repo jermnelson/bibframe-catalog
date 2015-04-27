@@ -1,12 +1,18 @@
 <section class="row container">
- <form class="container" role="form" method="POST" action="{{ url_for('search') }}">
+ <form class="container" role="form" method="POST" {#action="{{ url_for('search') }}"#}>
+   {{ basic_search.csrf_token }}
+   <input type="hidden" id="search-url" value="{{ url_for('search') }}"></input>
    <div class="col-md-6">
-    <div class="form-group">
-      <input type="text" name="phrase" class="form-control input-lg" data-bind="value: queryPhrase"><br>
+    <div class="form-group" >
+      <div id="bf_typeahead">
+        <input type="text" name="phrase" class="typeahead form-control input-lg" data-bind="value: queryPhrase"
+       {% if phrase %}placeholder="{{ phrase }}"{% endif %}
+       >
+      </div>
     </div>
    </div>
    <div class="col-md-2">
-    <button class="btn btn-primary btn-lg bibcat-search">Search</button>
+    <button class="btn btn-primary btn-lg bibcat-search" data-bind="click: searchCatalog">Search</button>
    </div>
  </form>
 </section>

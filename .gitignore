@@ -1,5 +1,6 @@
 *.pyc
 *.swp
+.*.sw*
 *.jar
 .DS*
 *egg-info*

@@ -1,32 +1,24 @@
-<hr class="bibcat" style="background-color: #4DBAC7;">
+<hr class="bibcat" style="background-color: #4DBAC7;" data-bind="visible: searchResults().length > 0">
 <section class="container">
-<ul class="media-list" id="Results">
-  {% for hit in result['hits']['hits'] %}
-  {% set entity = hit['_source'] %}
+<ul class="media-list" id="Results" data-bind="foreach: searchResults">
   <li class="media" itemscope> 
    <h3 class="media-heading bibcat-title"> 
-     <a class="bibcat-title" href="{{ entity['fcrepo:uuid'][0] }}">
-     {# <span data-bind="text: titleValue"></span> / <span data-bind="text: authorValue"></span> #}
-      {{ entity|name }} {% if 'bf:creator' in entity %}/ {{ entity|creator }}{% endif %}
+     <a class="bibcat-title" data-bind="attr: { 'href': url }">
+     <span data-bind="text: title"></span> / <span data-bind="text: author"></span> 
      </a>
    </h3>
    <div class="media-left">
      <a href="#" itemscope itemtype="http://bibframe.org/vocab/CoverArt">
-      <img src="{{ url_for('static', filename='images/cover-placeholder.png') }}" class="media-object">
+      <img data-bind="attr: { src: cover_url }"  class="media-object" {#src="{{ url_for('static', filename='images/cover-placeholder.png') }}"#} >
      </a>
    </div>
-   <article class="media-body" {# data-bind="foreach: locations" #} >
-     <h4 class="media-heading bibcat-text">{{ entity|bf_type }}</h4>
-     <h4 class="media-heading bibcat-text">Location 1 - 1.2 Miles - Map it</h4>
-
-    {#
-     <h4 class="media-heading bibcat-text">Location 1
-       <a class="bibcat-text" data-bind="attr: { href: locationURL, text: locationText }"></a> -
-       <a class="bibcat-text" data-bind="attr: { href: locationMap }">Map it</a>
+   <article class="media-body" data-bind="foreach: locations">
+     <h4 class="media-heading bibcat-text">
+       <span data-bind="text: location"></span>
+       <span data-bind="text: circulationStatus"></span> - 
+       <a class="bibcat-text" onclick="alert('Coming soon!')">Map it</a>
      </h4>
-     #}
    </article> 
   </li>
- {% endfor %}
 </ul> 
 </section>

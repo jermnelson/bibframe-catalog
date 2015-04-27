@@ -257,8 +257,11 @@ def generate_title_author(entity):
            data={"sparql": sparql})
         output += result.json()['results']['bindings'][0]['titleValue']['value']
         creator_sparql = GET_CREATORS_WORK_SPARQL.format(entity_url)
-    if 'bf:titleStatement' in entity:
-        output += ",".join(entity['bf:titleStatement'])
+    if 'bf:Instance' in entity.get('type', []):
+        if 'bf:titleStatement' in entity:
+            output += ",".join(entity.get('bf:titleStatement'))
+        elif 'bf:title' in entity:
+            output += ",".join(entity.get('bf:title'))
         creator_sparql = GET_CREATORS_INSTANCE_SPARQL.format(entity_url)
     creator_result = requests.post(
         "{}/triplestore".format(datastore_url),

@@ -9,7 +9,8 @@
 
 {% block activity %}
 <script>
-   ko.applyBindings(new CatalogViewModel());
+   var catalog_view_model = new CatalogViewModel();
+   ko.applyBindings(catalog_view_model);
    bfInstances.initialize();
    bfPeople.initialize();
    bfWorks.initialize(); 
@@ -17,7 +18,7 @@
    bfTopics.initialize();
 
    $('#bf_typeahead .typeahead').typeahead({
-      hightlight: true
+      highlight: true
    },
    {
       name: 'bf-works',
@@ -51,8 +52,17 @@
        header: '<h3 class="bg-info">Topics</h3>'
       }
 
-  });
+  }).on('typeahead:selected', function (obj, datum) {
+     console.log("Typeahead selected is " + datum.uuid );
+     window.location.replace("/" + datum.uuid);
 
+   });
+ 
+  $(window).scroll(function() {
+    if ($(window).scrollTop() + $(window).height() >= $(document).height()) {
+       catalog_view_model.loadResults();
+    }
+  });
 </script> 
 
 {% endblock %}

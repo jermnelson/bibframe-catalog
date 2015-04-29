@@ -1,5 +1,6 @@
 <hr class="bibcat" style="background-color: #4DBAC7;" data-bind="visible: searchResults().length > 0">
-<section class="container">
+<h3 data-bind="html: resultSummary" class="bibcat-text bibcat"></h3>
+<section class="container" id="scroll-container">
 <ul class="media-list" id="Results" data-bind="foreach: searchResults">
   <li class="media" itemscope> 
    <h3 class="media-heading bibcat-title"> 

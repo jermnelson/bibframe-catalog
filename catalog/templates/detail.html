@@ -9,48 +9,13 @@
 {% endblock %}
 
 {% block body %}
-<div class="row">
-  <section class="col-md-4">
-    <h3 class="back-to-results"><a href="#">Back to Results</a></h3>
-  </section>   
-</div>
-<hr class="back-to-results">
-<div class="row">
-  <article class="col-md-12 col-sm-12">
-   <h2 class="bibcat-title">{{ entity|title_author }}</h2>
-  </article>
-</div>
-<div class="row">
-  <section class="col-md-2 col-sm-3">
-    <img src="{{ entity|cover_art }}" class="image">
-    <p class="bibcat-title">
-    {% for prop in ['bf:extent', 'bf:dimensions', 'bf:edition'] %}
-       {{ entity.get(prop, [''])[0] }}
-    {% endfor %}
-    </p>
-  </section>
-  <article class="col-md-6 col-sm-6">
-   {{ entity|held_items|safe }}
-  </article>
-</div>
-<div class="row">
- <article class="col-md-8">
-  {% if 'bf:note' in entity %}
-  <h3 class="bibcat-text">Notes</h3>
-   {% for note in entity['bf:note'] %}
-    <p class="bibcat-text">{{ note }}</p>
-   {% endfor %}
-  {% endif %}
- </article>
-</div>
-{#
 <article>
 <h2 class="bibcat-title"><em>{% for type in entity['type'] %}{{ type }}{% endfor %} Display <small>v</smalL>{{ version }}</em></h2>
 <h1 class="bibcat-title">{{ entity|name }}</h1>
 <ul>
  <li><a class="bibcat-text" href="#result">Search Result</a></li>
  <li><a class="bibcat-text" href="#related">Related BIBFRAME Resources</a></li>
- <li><a class="bibcat-text" href="/{{ entity['fcrepo:uuid'][0] }}.json">JSON-LD</a></li>
+ <li><a class="bibcat-text" href="/{{ entity['fedora:uuid'][0] }}.json">JSON-LD</a></li>
 </ul>
 <a name="result"></a>
 <h3 class="bibcat-title">Elastic Search Result</h3>
@@ -60,6 +25,7 @@
  <dd>{{ val }}</dd>
  {% endfor %}
 </dl>
+{#
 <a href="rdf"></a>
 <h3>Fedora RDF</h3>
 <table class="table_border">
@@ -83,9 +49,9 @@
 <ol>
 {% for hit in related['hits']['hits'] %}
 {% set resource = hit['_source'] %}
-{% if resource['fcrepo:uuid'][0] !=  entity['fcrepo:uuid'][0] %}
+{% if resource['fedora:uuid'][0] !=  entity['fedora:uuid'][0] %}
 <li>
- <a href="/{{ resource['fcrepo:uuid'][0] }}"> {% for type in resource['type'] %}<em>{{ type }}</em>{% endfor %}
+ <a href="/{{ resource['fedora:uuid'][0] }}"> {% for type in resource['type'] %}<em>{{ type }}</em>{% endfor %}
   {{ resource|name }}
  </a>
 </li>
@@ -93,6 +59,6 @@
 {% endfor %}
 </ol>
 </section>
-</article>
 #}
+</article>
 {% endblock %} 

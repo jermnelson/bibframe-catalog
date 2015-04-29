@@ -31,10 +31,9 @@ var bfWorks = new Bloodhound({
  });
 
 
- 
 
 var Result = function(search_result) {
-   this.id = search_result['uuid'];
+   this.uuid = search_result['uuid'];
    this.url = search_result['url'];
    this.title = search_result['title'];
    this.author = search_result['creators'];
@@ -82,29 +81,52 @@ ko.bindingHandlers.typeaheadJS = {
 function CatalogViewModel() {
   self = this;
   self.flash = ko.observable();
-  self.pageNumber = ko.observable(0);
+  self.from = ko.observable(0);
   self.queryPhrase = ko.observable();
+  self.resultSummary = ko.observable();
   self.searchResults = ko.observableArray();
   self.shardSize = ko.observable(8);
+  self.totalResults = ko.observable(0);
+  self.csrf_token = $('#csrf_token').val();
+  self.search_url = $('#search-url').val();
+
+  self.loadResults = function() {
+    if(self.from() < self.totalResults()) { 
+      self.searchCatalog();
+    }
+  }
 
   self.searchCatalog = function() {
-    var csrf_token = $('#csrf_token').val();
-    var action = $('#search-url').val();
-    console.log("queryPhrase is " + self.queryPhrase());
     var data = {
-      csrfmiddlewaretoken: csrf_token,
+      csrfmiddlewaretoken: self.csrf_token,
       phrase: self.queryPhrase(),
-      page: self.pageNumber()+self.shardSize()
+      from: self.from(),
+      size: self.shardSize() 
     }
-    $.post(action, 
+    $.post(self.search_url, 
       data=data,
       function(datastore_response) {
         if(datastore_response['message'] == 'error') {
           self.flash(datastore_response['body']);
+          self.resultSummary("Error with search!");
         } else {
+          self.from(datastore_response['from']);
+          if(datastore_response['total'] != self.totalResults()) {
+              self.totalResults(datastore_response['total']);
+          }
+          if(self.from() > self.totalResults()){
+              self.from(self.totalResults());
+          }
+          self.resultSummary(self.from() + " of " + self.totalResults() + ' for <em>' + self.queryPhrase() + "</em>");
           for(i in datastore_response['hits']) {
             var row = datastore_response['hits'][i];
-            self.searchResults.push(new Result(row));
+            if(row['uuid'] in window.localStorage) {
+                continue;
+            }
+            var result = new Result(row);
+            self.searchResults.push(result);
+            window.localStorage.setItem(result['uuid'], JSON.stringify(result));
+            window.localStorage.setItem("counter:"+self.searchResult.length, result['id']);
           }
         }
 

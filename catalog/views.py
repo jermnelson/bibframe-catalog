@@ -5,8 +5,8 @@ import io
 import json
 import mimetypes
 import requests
-from flask import abort, jsonify, render_template, request
-from flask import session, send_file, url_for
+from flask import abort, jsonify, render_template, redirect
+from flask import request, session, send_file, url_for
 from .forms import BasicSearch
 from . import app, datastore_url, es_search, __version__, datastore_url, PREFIX
 from . import get_label, guess_name
@@ -124,9 +124,16 @@ def search():
     """Search view for the application"""
     search_type = request.form.get('search_type', 'kw')
     phrase = request.form.get('phrase')
+    size = int(request.form.get('size', 5))
+    from_ = int(request.form.get('from'))
     results = []
     if search_type.startswith("kw"):
-        result = es_search.search(q=phrase, index='bibframe', doc_type='Instance', size=5)
+        result = es_search.search(
+            q=phrase, 
+            index='bibframe', 
+            doc_type='Instance', 
+            size=size,
+            from_=from_)
     else:
         result = es_search.search(
             q=phrase,
@@ -139,18 +146,11 @@ def search():
             "uuid": hit['_id'], 
             "url": "{}/{}".format(hit['_type'], hit['_id'])}
         item.update(__expand_instance__(hit['_source']))
-##        for key, value in hit['_source'].items():
-##            if key.startswith('fcrepo:uuid'):
-##                continue
-##            for i,row in enumerate(value):
-##                # quick hack to check if value is uuid
-##                if row.count('-') == 4 and es_search.exists(id=row, index='bibframe'):
-##                    item[key] = es_search.get_source(id=row, index='bibframe')
-##                    #hit['_source'][key][i] = es_search.get_source(id=row, index='bibframe')
-##                else:
-##                    item[key] = row
         results.append(item)
-    return jsonify({"hits": results})
+    return jsonify(
+        {"hits": results, 
+         "from": from_ + size,
+         "total": result['hits']['total']})
 
 @app.route("/typeahead", methods=['GET', 'POST'])
 def typeahead_search():
@@ -177,7 +177,7 @@ def typeahead_search():
         size=5)
     key = search_type.lower()
     for hit in result.get('hits').get('hits'):
-        row = {key: None}
+        row = {key: None, 'uuid': hit['_id']}
         graph = hit['_source']
         if 'bf:label' in graph:
             row[key] = graph['bf:label'][0]
@@ -190,7 +190,10 @@ def typeahead_search():
 @app.route("/CoverArt/<uuid>.<ext>", defaults={"ext": "jpg"})
 def cover(uuid, ext):
     if es_search.exists(id=uuid, index='bibframe'):
-        cover = es_search.get_source(id=uuid, index='bibframe')
+        cover = es_search.get_source(
+            id=uuid, 
+            index='bibframe', 
+            fields=['bf:coverArt'])
         raw_image = base64.b64decode(
             cover.get('bf:coverArt')[0])
         file_name = '{}.{}'.format(uuid, ext)
@@ -199,58 +202,43 @@ def cover(uuid, ext):
                          mimetype=mimetypes.guess_type(file_name)[0])
     abort(404)
 
-@app.route("/<entity>/<uuid>", defaults={"ext": "html"})
-@app.route("/<entity>/<uuid>.<ext>", 
-           defaults={"entity": "Work", 
-                     "ext": "html"})
-def detail(entity, uuid, ext):
+@app.route("/<uuid>", defaults={"ext": "html"})
+@app.route("/<uuid>.<ext>")
+def detail_redirect(uuid, ext):
+    """View resolves an uuid to more specific entity in the catalog.
+
+    Args:
+        uuid -- UUID of Bibframe Resource
+        ext -- extension of the view, defaults to html
+    """
+    if es_search.exists(id=uuid, index='bibframe'):
+        result = es_search.get(id=uuid, index='bibframe', fields=['_type'])
+        entity = result.get('_type')   
+        return redirect(url_for('detail', 
+                        entity=entity, 
+                        uuid=uuid, 
+                        ext=ext))
+    abort(404)
+
+@app.route("/<entity>/<uuid>.<ext>")
+@app.route("/<entity>/<uuid>")
+@app.route("/<entity>/<uuid>.json")
+def detail(uuid, entity="Work", ext="html"):
+    print("In detail entity={} uuid={} ext={}".format(entity, uuid, ext))
     if es_search.exists(id=uuid, index='bibframe', doc_type=entity):
         resource = dict()
         result = es_search.get_source(id=uuid, index='bibframe')
         resource.update(result)
-        if entity.lower().startswith("work"):
-            sparql = """SELECT DISTINCT ?instance
-WHERE {{{{
-  ?instance  bf:instanceOf <{}> . 
-}}}}""".format(result['fcrepo:hasLocation'][0])
-                    
+        if ext.startswith('json'):
+            return jsonify(resource)
+        template = "detail.html"
+        if entity.lower().startswith("instance"):
+            template = "{}-detail.html".format(entity.lower())
         return render_template(
-            'detail.html',
+            template,
             entity=resource,
             version=__version__)
     abort(404)
-
-##@app.route("/<entity>/<uuid>.<ext>")
-##@app.route("/<uuid>.<ext>", defaults={"entity": "Work", "ext": "html"})
-##@app.route("/<uuid>", defaults={"entity": None})
-##def resource(uuid, entity, ext='html'):
-##    """Detailed view for a single resource
-##
-##    Args:
-##        uuid: Fedora UUID also used as ID in Elastic Search index
-##    """
-##    if es_search.exists(id=uuid, index='bibframe'):
-##        result = es_search.get_source(id=uuid, index='bibframe')
-##        for key, value in result.items():
-##            if key.startswith('fcrepo:uuid'):
-##                continue
-##            for i,row in enumerate(value):
-##                if es_search.exists(id=row, index='bibframe'):
-##                    result[key][i] = es_search.get_source(id=row, index='bibframe')
-##        #fedora_url = result.get('fcrepo:hasLocation')[0]
-##        #fedora_graph = rdflib.Graph().parse(fedora_url)
-##        related = es_search.search(q=uuid, index='bibframe')
-##        if ext.startswith('json'):
-##            #return fedora_graph.serialize(format='json-ld', indent=2).decode()
-##            return jsonify(result)
-##        return render_template(
-##            'detail.html',
-##            entity=result,
-##            #graph=fedora_graph,
-##            related=related,
-##            version=__version__
-##        )
-##    abort(404)
 
 
 @app.route("/")

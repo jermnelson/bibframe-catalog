@@ -190,12 +190,12 @@ def typeahead_search():
 @app.route("/CoverArt/<uuid>.<ext>", defaults={"ext": "jpg"})
 def cover(uuid, ext):
     if es_search.exists(id=uuid, index='bibframe'):
-        cover = es_search.get_source(
+        cover = es_search.get(
             id=uuid, 
             index='bibframe', 
             fields=['bf:coverArt'])
         raw_image = base64.b64decode(
-            cover.get('bf:coverArt')[0])
+            cover.get('fields').get('bf:coverArt')[0])
         file_name = '{}.{}'.format(uuid, ext)
         return send_file(io.BytesIO(raw_image),
                          attachment_filename=file_name,

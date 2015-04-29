@@ -126,7 +126,7 @@ function CatalogViewModel() {
             var result = new Result(row);
             self.searchResults.push(result);
             window.localStorage.setItem(result['uuid'], JSON.stringify(result));
-            window.localStorage.setItem("counter:"+self.searchResult.length, result['id']);
+            window.localStorage.setItem("counter:"+self.searchResults.length, result['id']);
           }
         }
 

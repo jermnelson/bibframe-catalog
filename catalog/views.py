@@ -224,7 +224,6 @@ def detail_redirect(uuid, ext):
 @app.route("/<entity>/<uuid>")
 @app.route("/<entity>/<uuid>.json")
 def detail(uuid, entity="Work", ext="html"):
-    print("In detail entity={} uuid={} ext={}".format(entity, uuid, ext))
     if es_search.exists(id=uuid, index='bibframe', doc_type=entity):
         resource = dict()
         result = es_search.get_source(id=uuid, index='bibframe')

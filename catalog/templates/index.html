@@ -11,8 +11,8 @@
 <script>
    var catalog_view_model = new CatalogViewModel();
    ko.applyBindings(catalog_view_model);
+   bfAgents.initialize();
    bfInstances.initialize();
-   bfPeople.initialize();
    bfWorks.initialize(); 
    //bfTitles.initialize();
    bfTopics.initialize();
@@ -37,11 +37,11 @@
       }
    },
    {
-      name: 'bf-people',
-      displayKey: 'person',
-      source: bfPeople.ttAdapter(),
+      name: 'bf-agent',
+      displayKey: 'agent',
+      source: bfAgents.ttAdapter(),
       templates: {
-       header: '<h3 class="bg-info">People</h3>'
+       header: '<h3 class="bg-info">Agents (People/Organizations)</h3>'
       }
    },
    {

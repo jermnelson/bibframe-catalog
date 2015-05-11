@@ -10,7 +10,7 @@
 
 {% block body %}
 <article>
-<h2 class="bibcat-title"><em>{% for type in entity['type'] %}{{ type }}{% endfor %} Display <small>v</smalL>{{ version }}</em></h2>
+<h2 class="bibcat-title"><em>{% for type in entity['type'] %}{% if type.startswith('bf') %}{{ type }} {% endif %}{% endfor %} Display <small>v</smalL>{{ version }}</em></h2>
 <h1 class="bibcat-title">{{ entity|name }}</h1>
 <ul>
  <li><a class="bibcat-text" href="#result">Search Result</a></li>

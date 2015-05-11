@@ -33,6 +33,11 @@
     <p class="bibcat-text">{{ note }}</p>
    {% endfor %}
   {% endif %}
+  {% if 'bf:contentsNote' in entity %}
+   {% for note in entity['bf:contentsNote'] %}
+    <p class="bibcat-text">{{ note }}</p>
+   {% endfor %}
+  {% endif %}
  </article>
 </div>
 {% endblock %} 

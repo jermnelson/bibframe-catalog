@@ -18,6 +18,29 @@ WHERE {{{{
    ?cover fedora:uuid "{{}}"^^<http://www.w3.org/2001/XMLSchema#string>
 }}}}""".format(PREFIX)
 
+def __agent_search__(phrase):
+    """Agent search for suggest completion 
+
+    Args:
+        phrase -- text phrase
+    """
+    es_dsl = {
+        "organization-suggest": {
+            "text": phrase,
+                "completion": {
+                    "field": "organization_suggest"
+
+               }
+        },
+       "person-suggest": {
+           "text": phrase,
+                "completion": {
+                    "field": "person_suggest"
+                }
+
+            }
+     }
+    result = es_search.suggest(body=es_dsl, index='bibframe')
 
 def __get_cover_art__(instance_uuid):
     """Helper function takes an instance_uuid and searches for 
@@ -30,9 +53,9 @@ def __get_cover_art__(instance_uuid):
     es_dsl = {
       "fields": ['schema:isBasedOnUrl'],
       "query": {
-        "bool": {
-          "must": [
-            {"match": { 
+        "filtered": {
+          "filter": [
+            {"term": { 
               "bf:coverArtFor": instance_uuid}
             }
           ]
@@ -157,34 +180,28 @@ def typeahead_search():
     """Search view for typeahead search"""
     output = []
     search_type = request.args.get('type')
+    key = search_type.lower()
     phrase = request.args.get('q')
-    es_dsl = {
-        "query": {
-          "bool": {
-            "should": [
-              {"match": { "bf:authorizedAccessPoint": phrase }},
-              {"match": { "bf:label": phrase }},
-              {"match": { "bf:title": phrase }} 
-            ]    
+    print(key, phrase)
+    if key.startswith('agent'):
+        return __agent_search__(phrase)
+    else: 
+        es_dsl = {
+            "{}-suggest".format(key): {
+                "text": phrase,
+                "completion": {
+                    "field": "{}_suggest".format(key)
+                }
             }
         }
-    #    "sort": { "bf:authorizedAccessPoint": "desc" }
-    }
-    result = es_search.search(
+    result = es_search.suggest(
         body=es_dsl,
-        index='bibframe',
-        doc_type=search_type,
-        size=5)
-    key = search_type.lower()
-    for hit in result.get('hits').get('hits'):
-        row = {key: None, 'uuid': hit['_id']}
-        graph = hit['_source']
-        if 'bf:label' in graph:
-            row[key] = graph['bf:label'][0]
-        if 'bf:title' in graph:
-            row[key] = graph['bf:title'][0]
-        if not row[key] is None:
-            output.append(row)
+        index='bibframe')
+    
+    for hit in result.get('{}-suggest'.format(key))[0]['options']:
+        row = {key: hit['text'], 
+               'uuid': hit['payload']['id']}
+        output.append(row)
     return json.dumps(output)
 
 @app.route("/CoverArt/<uuid>.<ext>", defaults={"ext": "jpg"})

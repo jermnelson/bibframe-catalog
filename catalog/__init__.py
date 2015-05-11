@@ -37,18 +37,18 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>"""
 
 GET_CREATORS_INSTANCE_SPARQL = """{}
-SELECT DISTINCT ?creator_name
+SELECT DISTINCT ?name
 WHERE {{{{
    <{{}}> bf:instanceOf ?work .
-   ?work bf:creator ?creator .
-   ?creator bf:label ?creator_name .
+   {{{{ ?work bf:creator ?agent }}}} UNION {{{{ ?work bf:contributor ?agent }}}} .
+   ?agent bf:label ?name .
 }}}}""".format(PREFIX)
 
 GET_CREATORS_WORK_SPARQL = """{}
-SELECT DISTINCT ?creator_name
+SELECT DISTINCT ?name
 WHERE {{{{
-  <{{}}>  bf:creator ?creator .
-   ?creator bf:label ?creator_name .
+   {{{{ <{{}}>  bf:creator ?agent . }}}} UNION {{{{ <{{}}> bf:contributor ?agent }}}} .
+   ?agent bf:label ?name .
 }}}}""".format(PREFIX)
 
 
@@ -176,7 +176,7 @@ def held_items(entity):
        data={"sparql": sparql})
     if result.status_code < 400:
         results = result.json()['results']
-        for row in results['bindings']:
+        for row in results.get('bindings', []):
             uuid = row['uuid']['value']
             if es_search.exists(id=uuid, index='bibframe'):
                 held_item = es_search.get_source(id=uuid, index='bibframe')
@@ -188,9 +188,11 @@ def held_items(entity):
                     "{}/triplestore".format(datastore_url), 
                     data={"sparql": sparql})
                 if held_item_result.status_code < 400:
-                    output += render_template(
-                        'snippets/held-item.html', 
-                        item=held_item_result.json()['results']['bindings'][0])
+                    bindings = held_item_result.json().get('results').get('bindings')
+                    if len(bindings) > 0:
+                        output += render_template(
+                            'snippets/held-item.html', 
+                            item=[0])
                 else:
                     output = "Cannot find {} for {}".format(uuid, fedora_url)
     return output
@@ -272,7 +274,7 @@ def generate_title_author(entity):
             if 'value' in row:
                 creators.append(row.get('value'))
             elif 'creator_name' in row:
-                creators.append(row.get('creator_name')['value'])
+                creators.append(row.get('name')['value'])
     output += " / {}".format(' '.join(creators))
     return output
 

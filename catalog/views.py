@@ -24,6 +24,7 @@ def __agent_search__(phrase):
     Args:
         phrase -- text phrase
     """
+    output = []
     es_dsl = {
         "organization-suggest": {
             "text": phrase,
@@ -41,6 +42,12 @@ def __agent_search__(phrase):
             }
      }
     result = es_search.suggest(body=es_dsl, index='bibframe')
+    for suggest_type in [ "person-suggest", 'organization-suggest']:
+        for hit in result.get(suggest_type)[0]['options']:
+            row = {'agent': hit['text'], 
+                   'uuid':  hit['payload']['id']}
+            output.append(row)
+    return json.dumps(output)
 
 def __get_cover_art__(instance_uuid):
     """Helper function takes an instance_uuid and searches for 

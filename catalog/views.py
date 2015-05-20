@@ -5,6 +5,7 @@ import io
 import json
 import mimetypes
 import requests
+from elasticsearch.exceptions import NotFoundError
 from flask import abort, jsonify, render_template, redirect
 from flask import request, session, send_file, url_for
 from .forms import BasicSearch
@@ -121,11 +122,15 @@ def __expand_instance__(instance):
     work_id = instance.get('bf:instanceOf')
     if not work_id:
         return {}
-    work = es_search.get(
-        id=work_id[0],  
-        index='bibframe', 
-        fields=['bf:creator', 
-                'bf:subject'])
+    try:
+        work = es_search.get(
+            id=work_id[0],  
+            index='bibframe', 
+            fields=['bf:creator', 
+                    'bf:subject'])
+    except NotFoundError:
+        #! Should preform secondary ES search on work_id
+        return {}
     
     if not work.get('found'):
         return {}

@@ -204,10 +204,12 @@ def get_label(uuid):
     Args:
         uuid -- Unique id used as key in Elastic Search
     """
-    result = es_search.get(id=uuid, index='bibframe', fields=['bf:label'])
-    if 'fields' in result:
-        return ' '.join(result['fields']['bf:label'])
-
+    try:
+        result = es_search.get(id=uuid, index='bibframe', fields=['bf:label'])
+        if 'fields' in result:
+            return ' '.join(result['fields']['bf:label'])
+    except NotFoundError:
+        return uuid
     
 
 @app.template_filter('name')

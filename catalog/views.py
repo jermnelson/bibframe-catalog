@@ -98,8 +98,9 @@ def __expand_instance__(instance):
                 item[field.split(":")[1]] = value
             if not 'circulationStatus' in item:
                 item['circulationStatus'] = 'Available'
-            if not 'shelfMarkLcc' in item:
-                item['shelfMarkLcc'] = None
+            for key in ['shelfMarkLcc', 'heldBy', 'subLocation']:
+                if not key in item:
+                    item[key] = None 
             output['held_items'].append(item)
     return output
 

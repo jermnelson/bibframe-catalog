@@ -1,5 +1,12 @@
 <div class="bibcat-text lead">
- {{ item.get('fedora:uuid') }}
+ {# item.get('fedora:uuid') #}
+ {% if 'bf:shelfMarkLcc' in item %}
+   {{ item.get('bf:shelfMarkLcc')[0] }}
+ {% endif %}
+ {{ item.get('bf:heldBy')[0] }}
+ {% if 'bf:subLocation' in item %}
+   : {{ item.get('bf:subLocation')[0] }}
+ {% endif %}
 {% if 'bf:label' in item %}
    {{ item.get('bf:holdingFor')|name }} 
    {% if not 'bf:circulationStatus' in item %}

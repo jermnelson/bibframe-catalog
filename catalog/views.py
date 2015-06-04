@@ -9,8 +9,8 @@ from elasticsearch.exceptions import NotFoundError
 from flask import abort, jsonify, render_template, redirect
 from flask import request, session, send_file, url_for
 from .forms import BasicSearch
-from . import app, datastore_url, es_search, __version__, datastore_url, PREFIX
-from . import get_label, guess_name
+from . import app, datastore_url, es_search, __version__
+from .filters import *
 
 COVER_ART_SPARQL = """{}
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>

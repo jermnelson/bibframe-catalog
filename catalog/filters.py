@@ -111,7 +111,75 @@ WHERE {{{{
  ?held_item fedora:uuid ?uuid .
 }}}}""".format(PREFIX)
 
+def __get_cover_art__(instance_uuid):
+    """Helper function takes an instance_uuid and searches for 
+    any cover art, returning the CoverArt ID and schema:isBasedOnUrl.
+    This may change in the future versions.
 
+    Args:
+        instance_uuid -- RDF fedora:uuid 
+    """
+    es_dsl = {
+      "fields": ['schema:isBasedOnUrl'],
+      "query": {
+        "filtered": {
+          "filter": [
+            {"term": { 
+              "bf:coverArtFor": instance_uuid}
+            }
+          ]
+        }
+      }
+     }
+    result = es_search.search(
+        body=es_dsl,
+        index='bibframe')
+    if result.get('hits').get('total') > 0:
+        top_hit = result['hits']['hits'][0]
+        return {"src": url_for('cover', uuid=top_hit['_id'], ext='jpg'),
+                "url": top_hit['fields']['schema:isBasedOnUrl']}
+
+
+def __get_held_items__(instance_uuid):
+    """Helper function takes an instance uuid and search for any heldItems
+    that match the instance, returning the circulation status and 
+    name of the organization that holds the item
+
+    Args:
+      instance_uuid -- RDF fedora:uuid
+    """
+    items = list()
+    es_dsl = {
+      "fields": ['bf:circulationStatus', 
+                 'bf:heldBy', 
+                 'bf:itemId',
+                 'bf:shelfMarkLcc',
+                 'bf:subLocation'],
+
+      "query": {
+        "filtered": {
+          "filter": [
+            {"term": { 
+              "bf:holdingFor": instance_uuid}
+            }
+          ]
+        }
+      }
+
+    }
+    result = es_search.search(
+        body=es_dsl,
+        index='bibframe',
+        doc_type='HeldItem')
+    for hit in result.get('hits', []).get('hits', []):
+        if not 'fields' in hit:
+            continue
+        items.append(hit['fields'])
+        #fields = hit['fields']
+        #items.append({"location": get_label(fields[0]),
+        #              "itemId": fields
+        #              "circulationStatus": fields.get('bf:circulationStatus')})    
+    return items 
 
 @app.template_filter('bf_type')
 def bibframe_type(entity):
@@ -123,6 +191,14 @@ def bibframe_type(entity):
 
 @app.template_filter('cover_art')
 def get_cover(entity):
+    cover_url = url_for('static', filename='images/cover-placeholder.png')
+    entity_id = entity.get('fedora:uuid')
+    cover_art = __get_cover_art__(entity_id)
+    if cover_art is not None:
+        cover_url = cover_art.get('src')
+    return cover_url       
+
+def get_cover_sparql(entity):
     cover_url = url_for('static', filename='images/cover-placeholder.png')
     if 'bf:workTitle' in entity:
         sparql = GET_WORK_COVER_SPARQL.format(entity['fedora:hasLocation'][0])
@@ -153,6 +229,16 @@ def creator(entity):
 
 @app.template_filter('held_items')
 def held_items(entity):
+    output = str()
+    entity_uuid = entity.get('fedora:uuid')
+    items = __get_held_items__(entity_uuid)
+    if len(items) > 0:
+        for item in items:
+            output += render_template('snippets/held-item.html',
+                                       item=item)
+    return output
+
+def held_items_sparql(entity):
     output = str()
     fedora_url = entity['fedora:hasLocation'][0]
     # Ugly hack to determine if the entity is a Work
@@ -264,44 +350,3 @@ def generate_detail_title(entity):
                 if i < len(work[agent])-1:
                     output += ","
     return output
-
-def generate_title_author(entity):
-    """Template filter takes either a bf:Work or bf:Instance and returns a 
-    Item title/Author formated string
-
-    Args:
-        entity -- Dictionary of entity info
-    """
-    output = str()
-    creators = []
-    if type(entity['fedora:hasLocation'][0]) == str:
-        entity_url = entity['fedora:hasLocation'][0]
-    else:
-        entity_url = entity['fedora:hasLocation'][0]['value']
-    if 'bf:workTitle' in entity:
-        sparql = GET_TITLEVALUE_SPARQL.format(entity['bf:workTitle'][0])
-        result = requests.post(
-           "{}/triplestore".format(datastore_url), 
-           data={"sparql": sparql})
-        output += result.json()['results']['bindings'][0]['titleValue']['value']
-        creator_sparql = GET_CREATORS_WORK_SPARQL.format(entity_url)
-    if 'bf:Instance' in entity.get('type', []):
-        if 'bf:titleStatement' in entity:
-            output += ",".join(entity.get('bf:titleStatement'))
-        elif 'bf:title' in entity:
-            output += ",".join(entity.get('bf:title'))
-        creator_sparql = GET_CREATORS_INSTANCE_SPARQL.format(entity_url)
-    creator_result = requests.post(
-        "{}/triplestore".format(datastore_url),
-        data={"sparql": creator_sparql})
-    if creator_result.status_code < 400:
-        results = creator_result.json()['results']
-        for row in results['bindings']:
-            if 'value' in row:
-                creators.append(row.get('value'))
-            elif 'creator_name' in row:
-                creators.append(row.get('name')['value'])
-    output += " / {}".format(' '.join(creators))
-    return output
-
-

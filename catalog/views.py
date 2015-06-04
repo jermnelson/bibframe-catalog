@@ -11,6 +11,7 @@ from flask import request, session, send_file, url_for
 from .forms import BasicSearch
 from . import app, datastore_url, es_search, __version__
 from .filters import *
+from .filters import __get_cover_art__, __get_held_items__
 
 COVER_ART_SPARQL = """{}
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>
@@ -50,66 +51,6 @@ def __agent_search__(phrase):
             output.append(row)
     return json.dumps(output)
 
-def __get_cover_art__(instance_uuid):
-    """Helper function takes an instance_uuid and searches for 
-    any cover art, returning the CoverArt ID and schema:isBasedOnUrl.
-    This may change in the future versions.
-
-    Args:
-        instance_uuid -- RDF fedora:uuid 
-    """
-    es_dsl = {
-      "fields": ['schema:isBasedOnUrl'],
-      "query": {
-        "filtered": {
-          "filter": [
-            {"term": { 
-              "bf:coverArtFor": instance_uuid}
-            }
-          ]
-        }
-      }
-     }
-    result = es_search.search(
-        body=es_dsl,
-        index='bibframe')
-    if result.get('hits').get('total') > 0:
-        top_hit = result['hits']['hits'][0]
-        return {"src": url_for('cover', uuid=top_hit['_id'], ext='jpg'),
-                "url": top_hit['fields']['schema:isBasedOnUrl']}
-
-def __get_held_items__(instance_uuid):
-    """Helper function takes an instance uuid and search for any heldItems
-    that match the instance, returning the circulation status and 
-    name of the organization that holds the item
-
-    Args:
-      instance_uuid -- RDF fedora:uuid
-    """
-    items = list()
-    es_dsl = {
-      "fields": ['bf:circulationStatus', 'bf:heldBy'],
-      "query": {
-        "bool": {
-          "must": [
-            {"match": {
-              "bf:holdingFor": instance_uuid}
-            }
-          ]
-        }
-      }
-    }
-    result = es_search.search(
-        body=es_dsl,
-        index='bibframe',
-        doc_type='HeldItem')
-    for hit in result.get('hits', []).get('hits', []):
-        if not 'fields' in hit:
-            continue
-        items.append({"location": get_label(hit['fields']['bf:heldBy'][0]),
-                      "circulationStatus": hit['fields'].get('bf:circulationStatus')})    
-    return items 
-
 
 def __expand_instance__(instance):
     """Helper function takes a search result Instance, queries index for 
@@ -148,9 +89,18 @@ def __expand_instance__(instance):
     cover_art = __get_cover_art__(instance.get('fedora:uuid')[0])
     if cover_art:
         output['cover'] = cover_art
-    locations = __get_held_items__(instance.get('fedora:uuid')[0])
-    if locations:
-        output['locations'] = locations
+    items = __get_held_items__(instance.get('fedora:uuid')[0])
+    output['held_items'] = []
+    if len(items) > 0:
+        for row in items:
+            item = dict()
+            for field, value in row.items():
+                item[field.split(":")[1]] = value
+            if not 'circulationStatus' in item:
+                item['circulationStatus'] = 'Available'
+            if not 'shelfMarkLcc' in item:
+                item['shelfMarkLcc'] = None
+            output['held_items'].append(item)
     return output
 
 

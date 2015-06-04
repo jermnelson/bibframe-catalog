@@ -48,9 +48,9 @@ var Result = function(search_result) {
    if('cover' in search_result) {
      this.cover_url = search_result['cover']['src']; 
    } 
-   this.locations = [];
-   if('locations' in search_result) {
-       this.locations = search_result['locations']
+   this.held_items = [];
+   if('held_items' in search_result) {
+       this.held_items = search_result['held_items'];
    }
 }
 

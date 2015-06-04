@@ -13,9 +13,9 @@
       <img data-bind="attr: { src: cover_url }"  class="media-object" {#src="{{ url_for('static', filename='images/cover-placeholder.png') }}"#} >
      </a>
    </div>
-   <article class="media-body" data-bind="foreach: locations">
+   <article class="media-body" data-bind="foreach: held_items">
      <h4 class="media-heading bibcat-text">
-       <span data-bind="text: location"></span>
+       <span data-bind="text: shelfMarkLcc"></span>
        <span data-bind="text: circulationStatus"></span> - 
        <a class="bibcat-text" onclick="alert('Coming soon!')">Map it</a>
      </h4>

@@ -1,4 +1,4 @@
-__author__ = "Jeremy Nelson"
+__author__ = "Original:Jeremy Nelson, Contributor:Mike Stabile"
 
 import base64
 import io
@@ -13,6 +13,7 @@ from . import app, datastore_url, es_search, __version__
 from .filters import *
 from .filters import __get_cover_art__, __get_held_items__
 
+# Test comment
 COVER_ART_SPARQL = """{}
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>
 SELECT DISTINCT ?cover
@@ -145,7 +146,7 @@ def typeahead_search():
     search_type = request.args.get('type')
     key = search_type.lower()
     phrase = request.args.get('q')
-    if key.startswith('agent'):
+    if (key.startswith('agent')):
         return __agent_search__(phrase)
     else: 
         es_dsl = {

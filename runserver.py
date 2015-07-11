@@ -1,5 +1,4 @@
-#!/home/jpnelson/bf-env/bin/python
-##!/home/jermnelson_gmail_com/bf-dev-env/bin/python
+#!/usr/bin/python3.4
 """
 Name:        runserver
 Purpose:     Runs BIBFRAME Access and Discovery Catalog

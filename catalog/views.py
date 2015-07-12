@@ -146,7 +146,7 @@ def typeahead_search():
     search_type = request.args.get('type')
     key = search_type.lower()
     phrase = request.args.get('q')
-    if (key.startswith('agent')):
+    if key.startswith('agent'):
         return __agent_search__(phrase)
     else: 
         es_dsl = {

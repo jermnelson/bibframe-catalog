@@ -9,6 +9,7 @@
     {% block css %}
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bibcat.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bf_SearchToolbar.css') }}">
     </style>
     {% endblock %}
     {# <script async defer src="//hypothes.is/embed.js"></script> #}
@@ -87,6 +88,7 @@
    {% endblock %}
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sammy.js/0.7.6/sammy.min.js"></script>  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
   <script src="{{ url_for('static', filename='js/typeahead.bundle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/bibcat.js') }}"></script>

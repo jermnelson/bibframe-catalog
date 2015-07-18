@@ -48,29 +48,60 @@ var Result = function(search_result) {
    if('cover' in search_result) {
      this.cover_url = search_result['cover']['src']; 
    } 
-   this.held_items = [];
+   this.held_items = []; 
    if('held_items' in search_result) {
        this.held_items = search_result['held_items'];
    }
 }
 
 function CatalogViewModel() {
-  self = this;
-  self.flash = ko.observable();
-  self.from = ko.observable(0);
-  self.queryPhrase = ko.observable();
-  self.resultSummary = ko.observable();
-  self.searchResults = ko.observableArray();
-  self.shardSize = ko.observable(8);
-  self.totalResults = ko.observable(0);
-  self.csrf_token = $('#csrf_token').val();
-  self.search_url = $('#search-url').val();
+	self = this;
+	self.searchHeaders= ['All', 'Works',  'Instances','Agents','Topics'];
+	self.sortOptions = ['Relevance','A-Z','Z-A','Category'];
+	self.flash = ko.observable();
+	self.from = ko.observable(0);
+	self.queryPhrase = ko.observable();
+	self.resultSummary = ko.observable();
+	self.searchResults = ko.observableArray();
+	self.shardSize = ko.observable(8);
+	self.totalResults = ko.observable(0);
+	self.csrf_token = $('#csrf_token').val();
+	self.search_url = $('#search-url').val();
+	self.chosenBfSearchViewId = ko.observable();
+	self.chosenBfSortViewId = ko.observable();
+	self.sortState = ko.computed(function() {
+									return self.chosenBfSortViewId();    
+								}, this);
+	
+    // Behaviours    
+    self.goToBfSearchView = function(bfSearchView) { 
+        location.hash = self.chosenBfSortViewId()+ "/" + bfSearchView;    
 
-  self.loadResults = function() {
-    if(self.from() < self.totalResults()) { 
-      self.searchCatalog();
-    }
-  }
+    };
+	self.goToBfSortView = function(bfSortView) { 
+        location.hash = bfSortView + "/" + self.chosenBfSearchViewId();
+    };
+
+	
+	
+	
+	self.loadResults = function() {
+		if(self.from() < self.totalResults()) { 
+			self.searchCatalog();
+		}
+	}
+	
+	// Client-side routes    
+    Sammy(function() {
+        this.get('#:sort/:filter', function() {
+            self.chosenBfSearchViewId(this.params.filter);
+            self.chosenBfSortViewId(this.params.sort);
+            //$.get("/mail", { mailId: this.params.mailId }, self.chosenMailData);
+        });
+        this.get('', function() { this.app.runRoute('get', '#Relevance/All') });
+    }).run();
+
+
 
   self.searchCatalog = function() {
 

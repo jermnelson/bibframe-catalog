@@ -1,52 +1,79 @@
-body {font-weight: 700;}
+.bf_searchToolbar {
+	border-bottom: 1px solid lightgrey;
+	margin-left: 2px;
+	width: 100%
+}
+.bf_searchToolbar ul{ 
+	
+	background-color: white; 
+	list-style-type: none; 
+	padding: 0; 
+	margin: 0; 
+	border-radius:0px; 
+	margin: 0px 0px 0px 0px;
+	font-size: 0px;
+}
+.bf_searchToolbar li:hover { 
+	background-color: #002952;
+	color: white; 
+}    
+.bf_searchToolbar li:first-child { 
+	border-left: none; border-radius: 0px 0 0 0px; 
+}
+.bf_searchToolbar li { 
+	font-size: 16px; 
+	font-weight: bold; 
+	display: inline-block; 
+	padding: 0px 10px 0px 10px; 
+	cursor: pointer; 
+	color: #337ab7; 
+	margin: 0px;
+	border-left: 1px solid #ddd; 
+	border-right: 1px solid #888; 
+}
+.bf_searchToolbar li { *display: inline !important; } /* IE7 only */
+.bf_searchToolbar .selected { 
+	background-color: #F2F2F2 !important; 
 
-.bibcat-background {
-  background-color: #40474F;
+	color: #00478F !important; 
+	text-shadow:none; 
+	border-color: #B3B3B3; 
+	border-left: none; 
+	box-shadow:inset 1px 2px 3px #999999; 
+} 
+.bfSortOptions {
+	width: 200px;
+	background-color: white !important;
+	color: #337ab7 !important;
+}
+.bfSortOptions span {
+	font-weight: bolder;
+	color: darkblue;
 }
 
-.bibcat-text {
-  color: #4DBAC7;
-  font-family: "futura-pt", sans-serif;
-  text-transform: uppercase;
+.bfSortOptions li {
+	display:initial;
 }
-
-.bibcat-title {
-  color: #FBCE35;
-  font-family: "futura-pt", sans-serif;
-  text-transform: uppercase;
-  padding-top: 15px;
+.bfSortUl {
+	position:absolute;
+	z-index:20;
+	background-color:white;
+	border: 1px solid lightgrey;
+	padding: 0px 0px 0px 0px;
+	margin: 0px 0px 0px 60px;
+	width: 157px;
+	list-style-type: none;
+	display:none;
 }
-
-button.bibcat-search {
-  background-color: #327C7F;
-  color: #FBCE35;
-   font-family: "futura-pt", sans-serif;
-  text-transform: uppercase;
+.bfSortUl li{
+	padding-left:10px;
+	display:list-item;
 }
-
-h1.bibcat {
-  font-size: 4em;
-  font-weight: bold;
+.bfSortUl li:hover {
+	background:#337ab7;
+	color:white;
+	cursor:pointer;
 }
-
-h3.back-to-results {
-  color: #4DBAC7;
-  text-transform: lowercase;
-}
-
-hr.bibcat {
-  background-color: white;
-  border-width: 1px 0;
-  height: 5px !important;
-}
-
-hr.back-to-results {
-  background-color: #4DBAC7;
-  border-width: 1px 0;
-  height: 5px !important;
- 
-}
-
 span.twitter-typeahead {
   width: 100%;
 }
@@ -75,7 +102,7 @@ span.twitter-typeahead {
 }
 
 .tt-dropdown-menu {
-  width: 422px;
+  width: 505px;
   margin-top: 4px;
   padding: 4px 0;
   background-color: #fff;
@@ -92,15 +119,58 @@ span.twitter-typeahead {
 .tt-suggestion {
   padding: 3px 20px;
   line-height: 24px;
+   height: 20px;
+   overflow:hidden;
+   
 }
 
 .tt-suggestion.tt-cursor {
   color: #fff;
-  background-color: #4DBAC7;
-
+  background-color: lightgray;
 }
-
+.tt-suggestions {
+  border-right:1px solid   grey;
+}
 .tt-suggestion p {
   margin: 0;
+  font-style:italic;
+  font-weight:normal;
 }
+div[class^='tt-dataset'] {
+  float: left;
+  width:75px;
+} 
+.bg-info {
+  height:25px;
+  overflow:hidden;
+  border-bottom:1px solid grey;
+  border-right:1px solid   grey;
+  background-color:white;
+  font-style:italic;
+  margin:0;
+  padding:0;
+  color: grey;
+  font-size:-1em;
+}
+div[class^='tt-dataset']:hover {
+  width:275px;
+  font-style:normal;
 
+}
+div[class^='tt-dataset']:hover .tt-suggestion {
+  height:initial;
+  
+}
+div[class^='tt-dataset']:hover .tt-suggestion p{
+  font-style:normal;
+}
+div[class^='tt-dataset']:hover .bg-info{
+	 
+	color: #00478F !important; 
+	/*background-color: #F2F2F2 !important;
+	text-shadow:none; 
+	border-color: #B3B3B3; 
+	border-left: none; 
+	box-shadow:inset 1px 2px 3px #999999;*/ 
+	font-style:normal;
+};

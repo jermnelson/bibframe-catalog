@@ -1,4 +1,4 @@
-<section class="row container">
+<section class="bc_searchBox row container">
  <form class="container" role="form" method="POST" {#action="{{ url_for('search') }}"#}>
    {{ basic_search.csrf_token }}
    <input type="hidden" id="search-url" value="{{ url_for('search') }}"></input>

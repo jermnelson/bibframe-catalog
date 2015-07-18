@@ -53,7 +53,6 @@ var Result = function(search_result) {
        this.held_items = search_result['held_items'];
    }
 }
-
 function CatalogViewModel() {
 	self = this;
 	self.searchHeaders= ['All', 'Works',  'Instances','Agents','Topics'];

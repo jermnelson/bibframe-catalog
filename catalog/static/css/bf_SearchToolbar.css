@@ -21,6 +21,7 @@
 .bf_searchToolbar li:first-child { 
 	border-left: none; border-radius: 0px 0 0 0px; 
 }
+
 .bf_searchToolbar li { 
 	font-size: 16px; 
 	font-weight: bold; 
@@ -75,4 +76,8 @@
 	background:#337ab7;
 	color:white;
 	cursor:pointer;
+}
+.bibcat_resultSummary{
+	color: black !important;
+	border-right: none !important;
 }

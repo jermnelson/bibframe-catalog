@@ -1,18 +1,22 @@
 <section class="bc_searchBox row container">
- <form class="container" role="form" method="POST" {#action="{{ url_for('search') }}"#}>
-   {{ basic_search.csrf_token }}
-   <input type="hidden" id="search-url" value="{{ url_for('search') }}"></input>
-   <div class="col-md-6">
-    <div class="form-group" >
-      <div id="bf_typeahead">
-        <input type="text" name="phrase" class="typeahead form-control input-lg" data-bind="value: queryPhrase"
-       {% if phrase %}placeholder="{{ phrase }}"{% endif %}
-       >
-      </div>
-    </div>
-   </div>
-   <div class="col-md-2">
-    <button class="btn btn-primary btn-lg bibcat-search" data-bind="click: searchCatalog">Search</button>
-   </div>
- </form>
+	
+	<form class="container" role="form" data-bind="submit: goToBfResultsView ">
+		{{ basic_search.csrf_token }}
+		<input type="hidden" id="search-url" value="{{ url_for('search') }}"></input>
+		<div class='bc_searchSubBox'>
+			<div class='appLogoSpacer'><img src="{{ url_for('static', filename='images/bc-logo-blue.png') }}"></img></div>
+			<div class="col-md-6">
+				<div class="form-group" >
+					<div id="bf_typeahead">
+						<input type="text" name="phrase" class="typeahead form-control input-lg" data-bind="textInput: queryPhrase">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-2">
+			<button class="btn btn-primary btn-lg bibcat-search" data-bind="click: goToBfResultsView">Search</button>
+		</div>
+	</form>
+	{%include 'snippets/bf_searchToolbar.html' %}
+	<li id='bibcat_resultSummary' data-bind="html: resultSummary" class="bibcat-text bibcat bibcat_resultSummary"></li>
 </section>

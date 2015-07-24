@@ -1,4 +1,4 @@
-<section class="bf_searchToolbar row container">
+<section class="bf_searchToolbar row container" style="display:none">
 	<!-- This section builds the toolbar for search and filtering 
 		 created by: Michael Stabile / mstabile75 at gmail.com-->
 	<ul class="bf_searchToolbarUl" data-bind="foreach: searchHeaders">
@@ -9,7 +9,7 @@
 	</ul>
 	<li class='bfSortOptions'>Sort: <span data-bind="text: sortState"></span></li>
 </section>
-<ul class="bfSortUl" data-bind="foreach: sortOptions">
+<ul class="bfSortUl" data-bind="foreach: sortOptions" style="display:none">
 	<li data-bind="text: $data,
 		click: $root.goToBfSortView">
 	</li>

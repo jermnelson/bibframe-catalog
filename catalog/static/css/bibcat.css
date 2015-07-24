@@ -68,7 +68,7 @@
 .bfSortUl li{
 	padding-left:10px;
 	display:list-item;
-}
+}-
 .bfSortUl li:hover {
 	background:#337ab7;
 	color:white;
@@ -173,4 +173,39 @@ div[class^='tt-dataset']:hover .bg-info{
 	border-left: none; 
 	box-shadow:inset 1px 2px 3px #999999;*/ 
 	font-style:normal;
+}
+.searchBoxFloat, .logoFloat {
+	position:fixed;
+	top:0px;
+	background:white;
+}
+.logoFloat{
+	z-index:10;
+}
+.appLogo img {
+	float:left;
+	height: 48px;
+	position:fixed;
+}
+.appLogoSpacer img {
+	float:left;
+	height: 48px;
+	visibility:hidden;
+}
+.bibcat-title {
+	margin-top: 5px;
+}
+.appHeaderLogoSpacer img {
+	float:left;
+	height: 48px;
+	visibility:hidden;
+
+}
+.bc_searchSubBox .col-md-6{
+
+	float:left
+}
+.bc_searchBox form {
+	margin:0;
+	padding:0;
 }

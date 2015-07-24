@@ -3,79 +3,10 @@
 {% block body %}
 
   {%include 'snippets/basic-search.html' %}
-  {%include 'snippets/bf_searchToolbar.html' %}
   {%include 'snippets/brief-result.html' %}
 
 {% endblock %}
 
 {% block activity %}
-<script>
-   var catalog_view_model = new CatalogViewModel();
-   ko.applyBindings(catalog_view_model);
-   var sortOptions = $('.bfSortUl');
-   $(".bfSortOptions").append(sortOptions);
-   $(".bfSortOptions").hover(
-						function(){$('.bfSortUl').show();},
-						function(){$('.bfSortUl').hide();}
-						);
-	$('.bfSortUl').click(function(){$(this).hide()});
-   var completeSortOptions = $(".bfSortOptions");
-   $(".bf_searchToolbarUl").prepend(completeSortOptions);
-   bfAgents.initialize();
-   bfInstances.initialize();
-   bfWorks.initialize(); 
-   //bfTitles.initialize();
-   bfTopics.initialize();
 
-   $('#bf_typeahead .typeahead').typeahead({
-      highlight: true
-   },
-   {
-	name: 'bf-works',		
-	displayKey: 'work',		
-	source: bfWorks.ttAdapter(),	
-	templates: {
-				header: '<div class=\'ttSection\'><h3 class="bg-info">Works</h3>',
-				footer: '</div>'
-				}
-   },
-   {
-      name: 'bf-instance',
-      displayKey: 'instance',
-      source: bfInstances.ttAdapter(),
-      templates: {
-       header: '<div class=\'ttSection\'><h3 class="bg-info">Instances</h3>',
-       footer: '</div>'
-      }
-   },
-   {
-      name: 'bf-agent',
-      displayKey: 'agent',
-      source: bfAgents.ttAdapter(),
-      templates: {
-       header: '<div class=\'ttSection\'><h3 class="bg-info">Agents (People/Organizations)</h3>',
-       footer: '</div>'
-      }
-   },
-   {
-      name: 'bf-topics',
-      displayKey: 'topic',
-      source: bfTopics.ttAdapter(),
-      templates: {
-       header: '<div class=\'ttSection\'><h3 class="bg-info">Topics</h3>',
-       footer: '</div>'
-      }
-
-  }).on('typeahead:selected', function (obj, datum) {
-     console.log("Typeahead selected is " + datum.uuid );
-     window.location.replace("/" + datum.uuid);
-
-   });
- 
-  $(window).scroll(function() {
-    if ($(window).scrollTop() + $(window).height() >= $(document).height()) {
-       catalog_view_model.loadResults();
-    }
-  });
-</script> 
 {% endblock %}

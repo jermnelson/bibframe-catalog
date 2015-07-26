@@ -80,4 +80,6 @@
 .bibcat_resultSummary{
 	color: black !important;
 	border-right: none !important;
+	background-color: white !important;
+	cursor:default !important;
 }

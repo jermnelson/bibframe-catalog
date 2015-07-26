@@ -5,7 +5,8 @@ function CatalogViewModel() {
 	self.flash = ko.observable();
 	self.from = ko.observable(0);
 	self.queryPhrase = ko.observable();
-	self.resultSummary = ko.observable();
+	self.queryPhraseForResults = ko.observable()
+	self.errorMsg = ko.observable("");
 	self.searchResults = ko.observableArray();
 	self.shardSize = ko.observable(8);
 	self.totalResults = ko.observable(0);
@@ -16,6 +17,9 @@ function CatalogViewModel() {
 	self.sortState = ko.computed(function() {
 									return self.chosenBfSortViewId();    
 								}, this);
+	self.resultSummary = ko.computed(function() {
+										return (self.errorMsg() !== ""? self.errorMsg() : self.from() + " of " + self.totalResults() + ' for <em>' + self.queryPhraseForResults() + "</em>");
+									}, this);
 	
     // Behaviours    
     self.goToBfSearchView = function(bfSearchView) { 
@@ -44,14 +48,14 @@ function CatalogViewModel() {
             self.chosenBfSearchViewId(this.params.filter);
             self.chosenBfSortViewId(this.params.sort);
             self.searchResults([]);
-            self.resultSummary(null);
+            //self.resultSummary(null);
             var queryStr = (this.params.queryPhrase == '#$'?"":this.params.queryPhrase);
             self.queryPhrase(queryStr);		
             if (isNotNull(queryStr)) {
 				$('.bf_searchToolbar').show();
 				//alert("sammy pre query");
+				self.from(0);
 				searchCatalog();
-				$(".tt-dropdown-menu").hide();
 				//alert("sammy post query");
 			} else {
 				$('.bf_searchToolbar').hide();
@@ -83,6 +87,7 @@ var Result = function(search_result) {
 	
 function searchCatalog() {
 	//alert("enter search function");
+	$(".tt-dropdown-menu").hide();
 	var data = {
 	  csrfmiddlewaretoken: self.csrf_token,
 	  phrase: self.queryPhrase(),
@@ -94,8 +99,10 @@ function searchCatalog() {
 			function(datastore_response) {
 				if(datastore_response['message'] == 'error') {
 					self.flash(datastore_response['body']);
-					self.resultSummary("Error with search!");
+					self.errorMsg("Error with search!");
 				} else {
+					self.queryPhraseForResults(self.queryPhrase());
+					self.errorMsg("");
 					self.from(datastore_response['from']);
 					if(datastore_response['total'] != self.totalResults()) {
 						self.totalResults(datastore_response['total']);
@@ -103,7 +110,6 @@ function searchCatalog() {
 					if(self.from() > self.totalResults()){
 						self.from(self.totalResults());
 					}
-					self.resultSummary(self.from() + " of " + self.totalResults() + ' for <em>' + self.queryPhrase() + "</em>");
 					for(i in datastore_response['hits']) {
 						var row = datastore_response['hits'][i];
 						self.searchResults

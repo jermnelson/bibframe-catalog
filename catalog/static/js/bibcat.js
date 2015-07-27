@@ -38,7 +38,7 @@ function CatalogViewModel() {
     
 	self.loadResults = function() {
 		if(self.from() < self.totalResults()) { 
-			searchCatalog();
+			searchCatalog(this.params);
 		}
 	}
 
@@ -55,7 +55,7 @@ function CatalogViewModel() {
 				$('.bf_searchToolbar').show();
 				//alert("sammy pre query");
 				self.from(0);
-				searchCatalog();
+				searchCatalog(this.params);
 				//alert("sammy post query");
 			} else {
 				$('.bf_searchToolbar').hide();
@@ -79,13 +79,13 @@ var Result = function(search_result) {
    if('cover' in search_result) {
      this.cover_url = search_result['cover']['src']; 
    } 
-   this.held_items = []; 
+   this.held_items = [];
    if('held_items' in search_result) {
        this.held_items = search_result['held_items'];
    }
 }
 	
-function searchCatalog() {
+function searchCatalog(params) {
 	//alert("enter search function");
 	$(".tt-dropdown-menu").hide();
 	var data = {
@@ -93,7 +93,13 @@ function searchCatalog() {
 	  phrase: self.queryPhrase(),
 	  from: self.from(),
 	  size: self.shardSize() 
+        }
+        if(params.sort) {
+          data['sort'] =  params.sort;
 	}
+        if(params.filter) {
+          data['filter'] = params.filter;
+        }
 	$.post(self.search_url, 
 			data=data,
 			function(datastore_response) {

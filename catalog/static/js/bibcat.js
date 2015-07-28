@@ -38,17 +38,23 @@ function CatalogViewModel() {
     
 	self.loadResults = function() {
 		if(self.from() < self.totalResults()) { 
-			searchCatalog(this.params);
-		}
+                   Sammy(function() {
+                       this.get('#:sort/:filter/:queryPhrase', function() {
+			   searchCatalog(this.params);
+                   });
+		  });
+              }
 	}
 
-	// Client-side routes    
+    // Client-side routes    
     Sammy(function() {
         this.get('#:sort/:filter/:queryPhrase', function() {
             self.chosenBfSearchViewId(this.params.filter);
             self.chosenBfSortViewId(this.params.sort);
             self.searchResults([]);
             //self.resultSummary(null);
+            $(".tt-dropdown-menu").hide();
+
             var queryStr = (this.params.queryPhrase == '#$'?"":this.params.queryPhrase);
             self.queryPhrase(queryStr);		
             if (isNotNull(queryStr)) {

@@ -132,7 +132,7 @@ def search():
         "sort": {}
     }
     if filter_.startswith("all"):
-        es_dsl['query']['match'] = phrase
+        es_dsl['query']['match'] =  {"_all": phrase}
     else:
         if filter_.endswith("s"):
             filter_ = filter_[:-1]
@@ -140,6 +140,7 @@ def search():
         es_dsl["query"]["filtered"] =  {
             "query": {
                 "match": {"_all": phrase}
+            }
         }
         if doc_type.startswith("agent"):
             es_dsl["query"]["filtered"]["filter"] = {
@@ -159,24 +160,17 @@ def search():
         else:
             es_dsl["query"]["filtered"]["filter"] = {
                 "type": {
-                    "value": doc_type
+                    "value": doc_type.title()
                 }
            }
     if not sort.startswith("relevance"):
-      es_dsl['sort'] = __generate_sort(sort)
+      es_dsl['sort'] = __generate_sort__(sort, doc_type)
+    print(es_dsl)
     result = es_search.search(
         body=es_dsl, 
         index='bibframe', 
         size=size,
         from_=from_)
-
-    if search_type.startswith("kw"):
-        result =     else:
-        result = es_search.search(
-            q=phrase,
-            index='bibframe',
-            doc_type='Work',
-            size=5)
     for hit in result.get('hits').get('hits'):
         item = {
             "title": guess_name(hit['_source']),
@@ -270,6 +264,17 @@ def detail(uuid, entity="Work", ext="html"):
             entity=resource,
             version=__version__)
     abort(404)
+
+@app.route("/itemDetails")
+def itemDetails():
+    uuid = request.args.get('uuid')
+    doc_type = request.args.get('type')
+    if es_search.exists(id=uuid, index='bibframe'):
+        resource = dict()
+    result = es_search.get_source(id=uuid, index='bibframe')
+    resource.update(result)
+    return jsonify(resource)
+
 
 
 @app.route("/")

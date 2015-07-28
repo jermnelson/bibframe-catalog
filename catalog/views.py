@@ -105,6 +105,17 @@ def __expand_instance__(instance):
             output['held_items'].append(item)
     return output
 
+def __generate_sort__(sort, doc_type):
+    """Generates sort DSL based on type of sort and the doc_type"""
+    output = {}
+    if sort.startswith("a-z"):
+        order = "asc"
+    elif sort.startswith("z-a"):
+        order = "desc"
+    #! Need routing for Category?
+    output["bf:label"] = {"order": order}
+    return output
+    
 
 @app.route('/search', methods=['POST', 'GET'])
 def search():
@@ -113,20 +124,53 @@ def search():
     phrase = request.form.get('phrase')
     size = int(request.form.get('size', 5))
     from_ = int(request.form.get('from'))
-    results = []
-    if search_type.startswith("kw"):
-        result = es_search.search(
-            q=phrase, 
-            index='bibframe', 
-            doc_type='Instance', 
-            size=size,
-            from_=from_)
+    filter_ = request.form.get('filter', 'All').lower()
+    sort = request.form.get('sort', 'Relevance').lower()
+    doc_type, results = None, []
+    es_dsl = {
+        "query": {},
+        "sort": {}
+    }
+    if filter_.startswith("all"):
+        es_dsl['query']['match'] =  {"_all": phrase}
     else:
-        result = es_search.search(
-            q=phrase,
-            index='bibframe',
-            doc_type='Work',
-            size=5)
+        if filter_.endswith("s"):
+            filter_ = filter_[:-1]
+        doc_type = filter_
+        es_dsl["query"]["filtered"] =  {
+            "query": {
+                "match": {"_all": phrase}
+            }
+        }
+        if doc_type.startswith("agent"):
+            es_dsl["query"]["filtered"]["filter"] = {
+                "or": [
+                    {
+                        "type": {
+                            "value": "Person"
+                        }
+                     },
+                     {
+                         "type": {
+                             "value": "Organization"
+                         }
+                     }
+                ]
+            }
+        else:
+            es_dsl["query"]["filtered"]["filter"] = {
+                "type": {
+                    "value": doc_type.title()
+                }
+           }
+    if not sort.startswith("relevance"):
+      es_dsl['sort'] = __generate_sort__(sort, doc_type)
+    print(es_dsl)
+    result = es_search.search(
+        body=es_dsl, 
+        index='bibframe', 
+        size=size,
+        from_=from_)
     for hit in result.get('hits').get('hits'):
         item = {
             "title": guess_name(hit['_source']),
@@ -222,14 +266,18 @@ def detail(uuid, entity="Work", ext="html"):
     abort(404)
 
 @app.route("/itemDetails")
-def itemDetails(uuid):
-	if es_search.exists(id=uuid, index='bibframe'):
-		resource = dict()
-        result = es_search.get_source(id=uuid, index='bibframe')
-        resource.update(result)
-        return jsonify(resource)
-	abort(404)
-         
+def itemDetails():
+    uuid = request.args.get('uuid')
+    doc_type = request.args.get('type')
+    if es_search.exists(id=uuid, index='bibframe'):
+        resource = dict()
+    result = es_search.get_source(id=uuid, index='bibframe')
+    resource.update(result)
+    return jsonify(resource)
+
+
+
+>>>>>>> upstream/development
 @app.route("/")
 def index():
     """Default view for the application"""

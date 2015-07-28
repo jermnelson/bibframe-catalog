@@ -39,33 +39,47 @@ function CatalogViewModel() {
     
 	self.loadResults = function() {
 		if(self.from() < self.totalResults()) { 
-			searchCatalog();
-		}
+                   Sammy(function() {
+                       this.get('#:sort/:filter/:queryPhrase', function() {
+			   searchCatalog(this.params);
+                   });
+		  });
+              }
 	}
 
-	// Client-side routes    
+    // Client-side routes    
     Sammy(function() {
         this.get('#:sort/:filter/:queryPhrase', function() {
             self.searchResults([]);
             $(".tt-dropdown-menu").hide();
             if (this.params.sort === "item") { //load items details into 
+				self.queryPhrase(queryStr);	
 				$('.bf_searchToolbar').hide();
-				$.get("./itemDetails/", {uuid:this.params.queryPhrase,type:this.params.filter},self.chosenItemData)
-			} else {
-				self.chosenItemData(null);
-				self.chosenBfSearchViewId(this.params.filter);
-				self.chosenBfSortViewId(this.params.sort);
-				//self.resultSummary(null);
+				$.get("/itemDetails", {uuid:this.params.queryPhrase,type:this.params.filter},self.chosenItemData);	
+            } else {
 				var queryStr = (this.params.queryPhrase == '#$'?"":this.params.queryPhrase);
-				self.queryPhrase(queryStr);		
 				if (isNotNull(queryStr)) {
 					$('.bf_searchToolbar').show();
 					//alert("sammy pre query");
 					self.from(0);
-					searchCatalog();
+					searchCatalog(this.params);
 					//alert("sammy post query");
 				} else {
-					$('.bf_searchToolbar').hide();
+					self.chosenItemData(null);
+					self.chosenBfSearchViewId(this.params.filter);
+					self.chosenBfSortViewId(this.params.sort);
+					//self.resultSummary(null);
+					var queryStr = (this.params.queryPhrase == '#$'?"":this.params.queryPhrase);
+					self.queryPhrase(queryStr);		
+					if (isNotNull(queryStr)) {
+						$('.bf_searchToolbar').show();
+						//alert("sammy pre query");
+						self.from(0);
+						searchCatalog();
+						//alert("sammy post query");
+					} else {
+						$('.bf_searchToolbar').hide();
+					};
 				};
 			};
 			$(window).scrollTop(0);
@@ -87,13 +101,13 @@ var Result = function(search_result) {
    if('cover' in search_result) {
      this.cover_url = search_result['cover']['src']; 
    } 
-   this.held_items = []; 
+   this.held_items = [];
    if('held_items' in search_result) {
        this.held_items = search_result['held_items'];
    }
 }
 	
-function searchCatalog() {
+function searchCatalog(params) {
 	//alert("enter search function");
 	$(".tt-dropdown-menu").hide();
 	var data = {
@@ -101,7 +115,13 @@ function searchCatalog() {
 	  phrase: self.queryPhrase(),
 	  from: self.from(),
 	  size: self.shardSize() 
+        }
+        if(params.sort) {
+          data['sort'] =  params.sort;
 	}
+        if(params.filter) {
+          data['filter'] = params.filter;
+        }
 	$.post(self.search_url, 
 			data=data,
 			function(datastore_response) {

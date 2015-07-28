@@ -14,6 +14,7 @@ function CatalogViewModel() {
 	self.search_url = $('#search-url').val();
 	self.chosenBfSearchViewId = ko.observable();
 	self.chosenBfSortViewId = ko.observable();
+	self.chosenItemData = ko.observable();
 	self.sortState = ko.computed(function() {
 									return self.chosenBfSortViewId();    
 								}, this);
@@ -45,20 +46,27 @@ function CatalogViewModel() {
 	// Client-side routes    
     Sammy(function() {
         this.get('#:sort/:filter/:queryPhrase', function() {
-            self.chosenBfSearchViewId(this.params.filter);
-            self.chosenBfSortViewId(this.params.sort);
             self.searchResults([]);
-            //self.resultSummary(null);
-            var queryStr = (this.params.queryPhrase == '#$'?"":this.params.queryPhrase);
-            self.queryPhrase(queryStr);		
-            if (isNotNull(queryStr)) {
-				$('.bf_searchToolbar').show();
-				//alert("sammy pre query");
-				self.from(0);
-				searchCatalog();
-				//alert("sammy post query");
-			} else {
+            $(".tt-dropdown-menu").hide();
+            if (this.params.sort === "item") { //load items details into 
 				$('.bf_searchToolbar').hide();
+				$.get("./itemDetails/", {uuid:this.params.queryPhrase,type:this.params.filter},self.chosenItemData)
+			} else {
+				self.chosenItemData(null);
+				self.chosenBfSearchViewId(this.params.filter);
+				self.chosenBfSortViewId(this.params.sort);
+				//self.resultSummary(null);
+				var queryStr = (this.params.queryPhrase == '#$'?"":this.params.queryPhrase);
+				self.queryPhrase(queryStr);		
+				if (isNotNull(queryStr)) {
+					$('.bf_searchToolbar').show();
+					//alert("sammy pre query");
+					self.from(0);
+					searchCatalog();
+					//alert("sammy post query");
+				} else {
+					$('.bf_searchToolbar').hide();
+				};
 			};
 			$(window).scrollTop(0);
         });
@@ -72,7 +80,7 @@ function CatalogViewModel() {
 
 var Result = function(search_result) {
    this.uuid = search_result['uuid'];
-   this.url = search_result['url'];
+   this.url = "#item/	"+search_result['url'];
    this.title = search_result['title'];
    this.author = search_result['creators'];
    this.cover_url = '/static/images/cover-placeholder.png';

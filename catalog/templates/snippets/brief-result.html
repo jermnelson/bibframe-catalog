@@ -23,3 +23,12 @@
 		</li>
 	</ul> 
 </section>
+<div class="viewItem" data-bind="with: chosenItemData">
+	<div class="itemInfo">
+		<h1 data-bind="text: title"></h1>
+		<p><label>From</label>: <span data-bind="text: from"></span></p>
+		<p><label>To</label>: <span data-bind="text: to"></span></p>
+		<p><label>Date</label>: <span data-bind="text: date"></span></p>
+	</div>
+	<p class="message" data-bind="html: messageContent" />
+</div>

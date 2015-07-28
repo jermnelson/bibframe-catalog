@@ -221,7 +221,15 @@ def detail(uuid, entity="Work", ext="html"):
             version=__version__)
     abort(404)
 
-
+@app.route("/itemDetails")
+def itemDetails(uuid):
+	if es_search.exists(id=uuid, index='bibframe'):
+		resource = dict()
+        result = es_search.get_source(id=uuid, index='bibframe')
+        resource.update(result)
+        return jsonify(resource)
+	abort(404)
+         
 @app.route("/")
 def index():
     """Default view for the application"""

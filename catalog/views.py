@@ -5,6 +5,7 @@ import io
 import json
 import mimetypes
 import requests
+import logging
 from elasticsearch.exceptions import NotFoundError
 from flask import abort, jsonify, render_template, redirect
 from flask import request, session, send_file, url_for
@@ -227,7 +228,7 @@ def cover(uuid, ext):
                          attachment_filename=file_name,
                          mimetype=mimetypes.guess_type(file_name)[0])
     abort(404)
-
+	
 @app.route("/<uuid>", defaults={"ext": "html"})
 @app.route("/<uuid>.<ext>")
 def detail_redirect(uuid, ext):
@@ -267,17 +268,16 @@ def detail(uuid, entity="Work", ext="html"):
 
 @app.route("/itemDetails")
 def itemDetails():
+    logging.debug('entered ItemDetails')
+    logging.debug(request.args)
     uuid = request.args.get('uuid')
     doc_type = request.args.get('type')
     if es_search.exists(id=uuid, index='bibframe'):
         resource = dict()
-    result = es_search.get_source(id=uuid, index='bibframe')
+    result = es_search.get(id=uuid, index='bibframe')
     resource.update(result)
     return jsonify(resource)
 
-
-
->>>>>>> upstream/development
 @app.route("/")
 def index():
     """Default view for the application"""

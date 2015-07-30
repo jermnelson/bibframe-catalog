@@ -152,6 +152,29 @@ div[class^='tt-dataset'] {
   color: grey;
   font-size:-1em;
 }
+.tt-selectedDataSet {
+  width:275px !important;
+  font-style:normal;
+
+}
+.tt-selectedDataSet .tt-suggestion {
+  height:initial;
+  
+}
+.tt-selectedDataSet .tt-suggestion p{
+  font-style:normal;
+}
+.tt-selectedDataSet .bg-info{
+	 
+	color: #00478F !important; 
+	/*background-color: #F2F2F2 !important;
+	text-shadow:none; 
+	border-color: #B3B3B3; 
+	border-left: none; 
+	box-shadow:inset 1px 2px 3px #999999;*/ 
+	font-style:normal;
+}
+
 div[class^='tt-dataset']:hover {
   width:275px;
   font-style:normal;
@@ -174,6 +197,10 @@ div[class^='tt-dataset']:hover .bg-info{
 	box-shadow:inset 1px 2px 3px #999999;*/ 
 	font-style:normal;
 }
+
+
+
+
 .searchBoxFloat, .logoFloat {
 	position:fixed;
 	top:0px;

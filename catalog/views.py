@@ -6,6 +6,7 @@ import json
 import mimetypes
 import requests
 import logging
+import re
 from elasticsearch.exceptions import NotFoundError
 from flask import abort, jsonify, render_template, redirect
 from flask import request, session, send_file, url_for
@@ -13,6 +14,27 @@ from .forms import BasicSearch
 from . import app, datastore_url, es_search, __version__
 from .filters import *
 from .filters import __get_cover_art__, __get_held_items__
+
+uuidPattern = re.compile('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89aAbB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}')
+
+def lookupRelatedDetails(v):
+    #Test the value => v to see if it is a uuid
+    returnList = []
+    print('Entered lookup: ', v)
+    if isinstance(v, list):
+        for pUuid in v:
+            print ("pUuid: ",pUuid)   
+            mUuid = uuidPattern.match(pUuid)
+            if mUuid:
+                #if v matches a uuid pattern then search for the item in elasticsearch
+                if es_search.exists(id=pUuid, index='bibframe'):
+                    uuidResult = es_search.get_source(id=pUuid, index='bibframe')
+                    returnList.append(uuidResult)
+    if len(returnList) > 0:
+        return returnList
+    else:
+        return 0
+	
 
 # Test comment
 COVER_ART_SPARQL = """{}
@@ -268,13 +290,17 @@ def detail(uuid, entity="Work", ext="html"):
 
 @app.route("/itemDetails")
 def itemDetails():
-    logging.debug('entered ItemDetails')
-    logging.debug(request.args)
     uuid = request.args.get('uuid')
     doc_type = request.args.get('type')
     if es_search.exists(id=uuid, index='bibframe'):
         resource = dict()
     result = es_search.get(id=uuid, index='bibframe')
+    for k, v in result['_source'].items():
+        #print(k," : ",v," --> ",type(v))
+        itemLookup = lookupRelatedDetails(v)
+        if itemLookup:
+            result['_source'][k] = itemLookup
+			
     resource.update(result)
     return jsonify(resource)
 

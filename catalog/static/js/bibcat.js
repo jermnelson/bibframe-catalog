@@ -58,7 +58,7 @@ function CatalogViewModel() {
 					function(datastore_response) {
 						self.chosenItemData(datastore_response);
 						//self.chosenItemData({type:'Person'});
-						$('.viewItem').append(JSON.stringify(datastore_response));
+						$('.viewItem').append("<pre>"+JSON.stringify(datastore_response, null, 2)+"</pre>");
 					}
 				);	
             } else {

@@ -299,7 +299,7 @@ def itemDetails():
         #print(k," : ",v," --> ",type(v))
         itemLookup = lookupRelatedDetails(v)
         if itemLookup:
-            result['_source'][k] = itemLookup
+            result['_source'][k] = {'uuid':result['_source'][k],'lookup':itemLookup}
 			
     resource.update(result)
     return jsonify(resource)

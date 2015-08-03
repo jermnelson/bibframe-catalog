@@ -5,6 +5,8 @@ import io
 import json
 import mimetypes
 import requests
+import logging
+import re
 from elasticsearch.exceptions import NotFoundError
 from flask import abort, jsonify, render_template, redirect
 from flask import request, session, send_file, url_for
@@ -13,6 +15,93 @@ from . import app, datastore_url, es_search, __version__
 from .filters import *
 from .filters import __get_cover_art__, __get_held_items__
 
+uuidPattern = re.compile('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89aAbB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}')
+
+def lookupRelatedDetails(v):
+    #Test the value => v to see if it is a uuid
+    returnList = []
+    #print('Entered lookup: ', v)
+    if isinstance(v, list):
+        for pUuid in v:
+            #print ("pUuid: ",pUuid)   
+            mUuid = uuidPattern.match(pUuid)
+            if mUuid:
+                #if v matches a uuid pattern then search for the item in elasticsearch
+                if es_search.exists(id=pUuid, index='bibframe'):
+                    uuidResult = es_search.get_source(id=pUuid, index='bibframe')
+                    returnList.append(uuidResult)
+    if len(returnList) > 0:
+        return returnList
+    else:
+        return 0
+	
+def findRelatedItems(filterFld,v):
+    es_dsl = {'rel_instances':{}, 'rel_works':{}, 'rel_agents':{}, 'rel_topics':{}}
+    print(filterFld)
+    if "instances" in filterFld:
+        print("enter Instance DSL")
+        es_dsl['rel_instances'] = {
+                     "query" : {
+                         "filtered" : {
+                             "filter" : {
+                                 "term" : {
+                                    filterFld['instances'] : v
+                                          }
+                                        }
+                                      }
+                                }
+                 }
+    if "works" in filterFld:
+        es_dsl['rel_works'] = {
+                     "query" : {
+                         "filtered" : {
+                             "filter" : {
+                                 "term" : {
+                                    filterFld['works'] : v
+                                          }
+                                        }
+                                      }
+                                }
+                 }
+    if "agents" in filterFld:
+        es_dsl['rel_agents'] = {
+                     "query" : {
+                         "filtered" : {
+                             "filter" : {
+                                 "term" : {
+                                    filterFld['agents'] : v
+                                          }
+                                        }
+                                      }
+                                }
+                 }
+    if "topics" in filterFld:
+        es_dsl['rel_topics'] = {
+                     "query" : {
+                         "filtered" : {
+                             "filter" : {
+                                 "term" : {
+                                    filterFld['topics'] : v
+                                          }
+                                        }
+                                      }
+                                }
+                 }
+    result = {}
+    print("es_dsl***",es_dsl)
+    for k, dsl in es_dsl.items():
+        print ("k:",k," dsl:",dsl)
+        if k.replace("rel_","") in filterFld:
+            print("*** Entered search ***")
+            searchResult = es_search.search(
+                body=dsl, 
+                index='bibframe', 
+                )
+            print("searchResult*** ", searchResult)
+            result = {k:searchResult['hits']['hits']}
+    print("rel items *** ",result)
+    return result
+      
 # Test comment
 COVER_ART_SPARQL = """{}
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>
@@ -227,7 +316,7 @@ def cover(uuid, ext):
                          attachment_filename=file_name,
                          mimetype=mimetypes.guess_type(file_name)[0])
     abort(404)
-
+	
 @app.route("/<uuid>", defaults={"ext": "html"})
 @app.route("/<uuid>.<ext>")
 def detail_redirect(uuid, ext):
@@ -269,13 +358,27 @@ def detail(uuid, entity="Work", ext="html"):
 def itemDetails():
     uuid = request.args.get('uuid')
     doc_type = request.args.get('type')
+    relItems = {}
     if es_search.exists(id=uuid, index='bibframe'):
         resource = dict()
-    result = es_search.get_source(id=uuid, index='bibframe')
+    result = es_search.get(id=uuid, index='bibframe')
+    for k, v in result['_source'].items():
+        #print(k," : ",v," --> ",type(v))
+        itemLookup = lookupRelatedDetails(v)
+        if itemLookup:
+            result['_source'][k] = {'uuid':result['_source'][k],'lookup':itemLookup}
+    if doc_type == 'Work':
+        print("*** work Type")
+        lookupFlds = {'instances':'bf:instanceOf'}
+        relItems = findRelatedItems(lookupFlds, uuid)
+    if doc_type == 'Person':
+        print("*** Person Type")
+        lookupFlds = {'works':'bf:creator'}
+        relItems = findRelatedItems(lookupFlds, uuid)
+
+    result['_z_relatedItems'] = relItems    
     resource.update(result)
     return jsonify(resource)
-
-
 
 @app.route("/")
 def index():

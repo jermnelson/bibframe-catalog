@@ -14,6 +14,8 @@ function CatalogViewModel() {
 	self.search_url = $('#search-url').val();
 	self.chosenBfSearchViewId = ko.observable();
 	self.chosenBfSortViewId = ko.observable();
+	self.chosenItemData = ko.observable();
+	self.viewMode = ko.observable();
 	self.sortState = ko.computed(function() {
 									return self.chosenBfSortViewId();    
 								}, this);
@@ -37,34 +39,41 @@ function CatalogViewModel() {
     };
     
 	self.loadResults = function() {
-		if(self.from() < self.totalResults()) { 
-                   Sammy(function() {
-                       this.get('#:sort/:filter/:queryPhrase', function() {
-			   searchCatalog(this.params);
-                   });
-		  });
-              }
+		if((self.from() < self.totalResults())&&(self.viewMode()=='search')) { 
+			   searchCatalog();
+        }
 	}
 
     // Client-side routes    
     Sammy(function() {
         this.get('#:sort/:filter/:queryPhrase', function() {
-            self.chosenBfSearchViewId(this.params.filter);
-            self.chosenBfSortViewId(this.params.sort);
             self.searchResults([]);
-            //self.resultSummary(null);
             $(".tt-dropdown-menu").hide();
-
             var queryStr = (this.params.queryPhrase == '#$'?"":this.params.queryPhrase);
-            self.queryPhrase(queryStr);		
-            if (isNotNull(queryStr)) {
-				$('.bf_searchToolbar').show();
-				//alert("sammy pre query");
-				self.from(0);
-				searchCatalog(this.params);
-				//alert("sammy post query");
-			} else {
+            if (this.params.sort === "item") { //load items details into 
+				self.viewMode('item');	
 				$('.bf_searchToolbar').hide();
+				$.get("/itemDetails",
+					data = {uuid:this.params.queryPhrase,type:this.params.filter},
+					function(datastore_response) {
+						self.chosenItemData(datastore_response);
+						//self.chosenItemData({type:'Person'});
+						$('.viewItem').append("<pre>"+JSON.stringify(datastore_response, null, 2)+"</pre>");
+					}
+				);	
+            } else {
+				self.viewMode('search');	
+				self.chosenItemData(null);
+				self.chosenBfSearchViewId((isNotNull(this.params.filter)?this.params.filter:'All'));
+				self.chosenBfSortViewId((isNotNull(this.params.sort)?this.params.sort:'Relevance'));
+				self.queryPhrase(queryStr);		
+				if (isNotNull(queryStr)) {
+					$('.bf_searchToolbar').show();
+					self.from(0);
+					searchCatalog();
+				} else {
+					$('.bf_searchToolbar').hide();
+				};
 			};
 			$(window).scrollTop(0);
         });
@@ -78,7 +87,7 @@ function CatalogViewModel() {
 
 var Result = function(search_result) {
    this.uuid = search_result['uuid'];
-   this.url = search_result['url'];
+   this.url = "#item/	"+search_result['url'];
    this.title = search_result['title'];
    this.author = search_result['creators'];
    this.cover_url = '/static/images/cover-placeholder.png';
@@ -91,7 +100,7 @@ var Result = function(search_result) {
    }
 }
 	
-function searchCatalog(params) {
+function searchCatalog() {
 	//alert("enter search function");
 	$(".tt-dropdown-menu").hide();
 	var data = {
@@ -100,11 +109,11 @@ function searchCatalog(params) {
 	  from: self.from(),
 	  size: self.shardSize() 
         }
-        if(params.sort) {
-          data['sort'] =  params.sort;
-	}
-        if(params.filter) {
-          data['filter'] = params.filter;
+        if(self.chosenBfSortViewId()) {
+          data['sort'] =  self.chosenBfSortViewId();
+		}
+        if(self.chosenBfSearchViewId()) {
+          data['filter'] = self.chosenBfSearchViewId();
         }
 	$.post(self.search_url, 
 			data=data,

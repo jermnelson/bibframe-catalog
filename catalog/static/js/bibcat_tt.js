@@ -47,9 +47,22 @@ function bibcat_launch_suggestbox (){
 	).on('typeahead:selected', function (obj, datum) {
 	 console.log("Typeahead selected is " + datum.uuid );
 	 window.location.replace("/" + datum.uuid);
+	 bibcat_format_suggestbox();
 	});
 };
-
+$("#bf_typeahead").find('input').keypress(function() {bibcat_format_suggestbox();});
+$("#bf_typeahead").find('input').keydown(function() {bibcat_format_suggestbox();});
+function bibcat_format_suggestbox() {
+	$("div[class^='tt-dataset']").removeClass("tt-selectedDataSet");
+	//$("div[class^='tt-dataset']").first().addClass("tt-selectedDataSet");
+	$(".tt-suggestion.tt-cursor").closest("div[class^='tt-dataset']").addClass("tt-selectedDataSet");
+	//$('#bf_typeahead .typeahead').find('typeahead:selected').closest("div[class^='tt-dataset']").addClass("tt-selectedDataSet");
+};
+$("div[class^='tt-dataset']").hover(function() {
+	$(".tt-suggestion").removeClass("tt-cursor");
+	$("div[class^='tt-dataset']").removeClass("tt-selectedDataSet");
+	$(this).addClass("tt-selectedDataSet");
+});
 var bfAgents = new Bloodhound({
   datumTokenizer: Bloodhound.tokenizers.obj.whitespace('agent'),
   queryTokenizer: Bloodhound.tokenizers.whitespace,

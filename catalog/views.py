@@ -20,10 +20,10 @@ uuidPattern = re.compile('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89aAbB]
 def lookupRelatedDetails(v):
     #Test the value => v to see if it is a uuid
     returnList = []
-    print('Entered lookup: ', v)
+    #print('Entered lookup: ', v)
     if isinstance(v, list):
         for pUuid in v:
-            print ("pUuid: ",pUuid)   
+            #print ("pUuid: ",pUuid)   
             mUuid = uuidPattern.match(pUuid)
             if mUuid:
                 #if v matches a uuid pattern then search for the item in elasticsearch
@@ -35,7 +35,73 @@ def lookupRelatedDetails(v):
     else:
         return 0
 	
-
+def findRelatedItems(filterFld,v):
+    es_dsl = {'rel_instances':{}, 'rel_works':{}, 'rel_agents':{}, 'rel_topics':{}}
+    print(filterFld)
+    if "instances" in filterFld:
+        print("enter Instance DSL")
+        es_dsl['rel_instances'] = {
+                     "query" : {
+                         "filtered" : {
+                             "filter" : {
+                                 "term" : {
+                                    filterFld['instances'] : v
+                                          }
+                                        }
+                                      }
+                                }
+                 }
+    if "works" in filterFld:
+        es_dsl['rel_works'] = {
+                     "query" : {
+                         "filtered" : {
+                             "filter" : {
+                                 "term" : {
+                                    filterFld['works'] : v
+                                          }
+                                        }
+                                      }
+                                }
+                 }
+    if "agents" in filterFld:
+        es_dsl['rel_agents'] = {
+                     "query" : {
+                         "filtered" : {
+                             "filter" : {
+                                 "term" : {
+                                    filterFld['agents'] : v
+                                          }
+                                        }
+                                      }
+                                }
+                 }
+    if "topics" in filterFld:
+        es_dsl['rel_topics'] = {
+                     "query" : {
+                         "filtered" : {
+                             "filter" : {
+                                 "term" : {
+                                    filterFld['topics'] : v
+                                          }
+                                        }
+                                      }
+                                }
+                 }
+    result = {}
+    print("es_dsl***",es_dsl)
+    for k, dsl in es_dsl.items():
+        print ("k:",k," dsl:",dsl)
+        if k.replace("rel_","") in filterFld:
+            print("*** Entered search ***")
+            searchResult = es_search.search(
+                body=dsl, 
+                index='bibframe', 
+                )
+            print("searchResult*** ", searchResult)
+            result = {k:searchResult['hits']['hits']}
+    print("rel items *** ",result)
+    return result
+      
 # Test comment
 COVER_ART_SPARQL = """{}
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>
@@ -292,6 +358,7 @@ def detail(uuid, entity="Work", ext="html"):
 def itemDetails():
     uuid = request.args.get('uuid')
     doc_type = request.args.get('type')
+    relItems = {}
     if es_search.exists(id=uuid, index='bibframe'):
         resource = dict()
     result = es_search.get(id=uuid, index='bibframe')
@@ -300,7 +367,16 @@ def itemDetails():
         itemLookup = lookupRelatedDetails(v)
         if itemLookup:
             result['_source'][k] = {'uuid':result['_source'][k],'lookup':itemLookup}
-			
+    if doc_type == 'Work':
+        print("*** work Type")
+        lookupFlds = {'instances':'bf:instanceOf'}
+        relItems = findRelatedItems(lookupFlds, uuid)
+    if doc_type == 'Person':
+        print("*** Person Type")
+        lookupFlds = {'works':'bf:creator'}
+        relItems = findRelatedItems(lookupFlds, uuid)
+
+    result['_z_relatedItems'] = relItems    
     resource.update(result)
     return jsonify(resource)
 

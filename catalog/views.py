@@ -37,7 +37,7 @@ def lookupRelatedDetails(v):
 	
 def findRelatedItems(filterFld,v):
     es_dsl = {'rel_instances':{}, 'rel_works':{}, 'rel_agents':{}, 'rel_topics':{}}
-    print(filterFld)
+    #print(filterFld)
     if "instances" in filterFld:
         print("enter Instance DSL")
         es_dsl['rel_instances'] = {
@@ -88,18 +88,18 @@ def findRelatedItems(filterFld,v):
                                 }
                  }
     result = {}
-    print("es_dsl***",es_dsl)
+    #print("es_dsl***",es_dsl)
     for k, dsl in es_dsl.items():
-        print ("k:",k," dsl:",dsl)
+        #print ("k:",k," dsl:",dsl)
         if k.replace("rel_","") in filterFld:
-            print("*** Entered search ***")
+            #print("*** Entered search ***")
             searchResult = es_search.search(
                 body=dsl, 
                 index='bibframe', 
                 )
-            print("searchResult*** ", searchResult)
+            #print("searchResult*** ", searchResult)
             result = {k:searchResult['hits']['hits']}
-    print("rel items *** ",result)
+    #print("rel items *** ",result)
     return result
       
 # Test comment
@@ -254,7 +254,7 @@ def search():
            }
     if not sort.startswith("relevance"):
       es_dsl['sort'] = __generate_sort__(sort, doc_type)
-    print(es_dsl)
+    #print(es_dsl)
     result = es_search.search(
         body=es_dsl, 
         index='bibframe', 
@@ -368,11 +368,11 @@ def itemDetails():
         if itemLookup:
             result['_source'][k] = {'uuid':result['_source'][k],'lookup':itemLookup}
     if doc_type == 'Work':
-        print("*** work Type")
+        #print("*** work Type")
         lookupFlds = {'instances':'bf:instanceOf'}
         relItems = findRelatedItems(lookupFlds, uuid)
     if doc_type == 'Person':
-        print("*** Person Type")
+        #print("*** Person Type")
         lookupFlds = {'works':'bf:creator'}
         relItems = findRelatedItems(lookupFlds, uuid)
 

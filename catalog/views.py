@@ -54,13 +54,9 @@ def findRelatedItems(filterFld,v):
     if "works" in filterFld:
         es_dsl['rel_works'] = {
                      "query" : {
-                         "filtered" : {
-                             "filter" : {
                                  "term" : {
                                     filterFld['works'] : v
                                           }
-                                        }
-                                      }
                                 }
                  }
     if "agents" in filterFld:
@@ -375,7 +371,10 @@ def itemDetails():
         #print("*** Person Type")
         lookupFlds = {'works':'bf:creator'}
         relItems = findRelatedItems(lookupFlds, uuid)
-
+    if doc_type == 'Topic':
+        lookupFlds = {'works':'bf:subject'}
+        relItems = findRelatedItems(lookupFlds, uuid)
+        		
     result['_z_relatedItems'] = relItems    
     resource.update(result)
     return jsonify(resource)

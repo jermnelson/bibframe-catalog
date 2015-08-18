@@ -46,7 +46,12 @@ function bibcat_launch_suggestbox (){
 		}
 	).on('typeahead:selected', function (obj, datum) {
 	 console.log("Typeahead selected is " + datum.uuid );
-	 window.location.replace("/" + datum.uuid);
+	 for (var key in datum) {
+		 if (!(key=='uuid')) {
+			 var itemType = key;
+		 }
+	}
+	 window.location.replace("#item/" + itemType + "/" + datum.uuid);
 	 bibcat_format_suggestbox();
 	});
 };

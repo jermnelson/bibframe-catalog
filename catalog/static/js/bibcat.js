@@ -25,17 +25,23 @@ function CatalogViewModel() {
 	
     // Behaviours    
     self.goToBfSearchView = function(bfSearchView) { 
+		var sFilter = (isNotNull(bfSearchView)?bfSearchView:'All');
+		var	sView = (isNotNull(self.chosenBfSortViewId())?self.chosenBfSortViewId():'Relevance'); 
 		var queryStr = "/" + (isNotNull(self.queryPhrase())? self.queryPhrase():"#$");
-        location.hash = self.chosenBfSortViewId()+ "/" + bfSearchView + queryStr;    
+        location.hash = sView + "/" + sFilter + queryStr;    
     };
 	self.goToBfSortView = function(bfSortView) {
+		var sFilter = (isNotNull(self.chosenBfSearchViewId())?self.chosenBfSearchViewId():'All');
+		var	sView = (isNotNull(bfSortView)?bfSortView:'Relevance'); 
 		var queryStr = "/" + (isNotNull(self.queryPhrase())? self.queryPhrase():"#$"); 
-        location.hash = bfSortView + "/" + self.chosenBfSearchViewId() + queryStr;
+        location.hash = sView + "/" + sFilter + queryStr;
     };
 	
-	self.goToBfResultsView = function(bfResultsView) { 
+	self.goToBfResultsView = function(bfResultsView) {
+		var sFilter = (isNotNull(self.chosenBfSearchViewId())?self.chosenBfSearchViewId():'All');
+		var	sView = (isNotNull(self.chosenBfSortViewId())?self.chosenBfSortViewId():'Relevance'); 
 		var queryStr = "/" + (isNotNull(self.queryPhrase()) ? self.queryPhrase():"#$");
-        location.hash = self.chosenBfSortViewId() + "/" + self.chosenBfSearchViewId() + queryStr;
+        location.hash = sView + "/" + sFilter + queryStr;
     };
     
 	self.loadResults = function() {
@@ -57,15 +63,16 @@ function CatalogViewModel() {
 					data = {uuid:this.params.queryPhrase,type:this.params.filter},
 					function(datastore_response) {
 						self.chosenItemData(datastore_response);
-						//self.chosenItemData({type:'Person'});
 						$('.viewItem').append("<pre>"+JSON.stringify(datastore_response, null, 2)+"</pre>");
 					}
 				);	
             } else {
 				self.viewMode('search');	
 				self.chosenItemData(null);
-				self.chosenBfSearchViewId((isNotNull(this.params.filter)?this.params.filter:'All'));
-				self.chosenBfSortViewId((isNotNull(this.params.sort)?this.params.sort:'Relevance'));
+				var sFilter = (isNotNull(this.params.filter)?this.params.filter:'All');
+				var	sView = (isNotNull(this.params.sort)?this.params.sort:'Relevance');
+				self.chosenBfSearchViewId(sFilter);
+				self.chosenBfSortViewId(sView);
 				self.queryPhrase(queryStr);		
 				if (isNotNull(queryStr)) {
 					$('.bf_searchToolbar').show();

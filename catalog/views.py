@@ -7,9 +7,14 @@ import mimetypes
 import requests
 import logging
 import re
+
+from simplepam import authenticate
+
 from elasticsearch.exceptions import NotFoundError
 from flask import abort, jsonify, render_template, redirect
 from flask import request, session, send_file, url_for
+from flask import stream_with_context, Response
+
 from .forms import BasicSearch
 from . import app, datastore_url, es_search, __version__
 from .filters import *
@@ -201,6 +206,39 @@ def __generate_sort__(sort, doc_type):
     output["bf:label"] = {"order": order}
     return output
     
+# Reporting Module Routes
+@app.route("/kibana/<path:url>")
+def kibana(url):
+    if not 'username' in session:
+        raise abort(403)
+    req = requests.get(url, stream=True)
+    return Response(
+        stream_with_context(
+            req.iter_content()), content_type = req.headers['content-type'])
+
+@app.route("/reports")
+def reports():
+    if not 'username' in session:
+        raise abort(403)
+    return "Reporting Module"
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if authenticate(str(username), str(password)):
+            session['username'] = request.form['username']
+            return redirect(url_for('index'))
+        else:
+            return 'Invalid username/password'
+    else:
+         return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.pop('username')
+    return redirect(url_for('index'))
 
 @app.route('/search', methods=['POST', 'GET'])
 def search():

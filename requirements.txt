@@ -9,3 +9,4 @@ rdflib>=4.1.2
 rdflib-jsonld>=0.2-dev
 requests
 simplepam
+uwsgi

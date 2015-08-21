@@ -16,13 +16,20 @@ function CatalogViewModel() {
 	self.chosenBfSortViewId = ko.observable();
 	self.chosenItemData = ko.observable();
 	self.viewMode = ko.observable();
+	self.instances = ko.observableArray();
 	self.sortState = ko.computed(function() {
 									return self.chosenBfSortViewId();    
 								}, this);
 	self.resultSummary = ko.computed(function() {
 										return (self.errorMsg() !== ""? self.errorMsg() : self.from() + " of " + self.totalResults() + ' for <em>' + self.queryPhraseForResults() + "</em>");
 									}, this);
-	
+	self.testUrl = function(urlToTest) {
+						if (isNotNull(urlToTest)) {
+							return '#item/Topic/'+urlToTest;
+						} else {
+							return '';
+						}
+					};
     // Behaviours    
     self.goToBfSearchView = function(bfSearchView) { 
 		var sFilter = (isNotNull(bfSearchView)?bfSearchView:'All');
@@ -63,6 +70,8 @@ function CatalogViewModel() {
 					data = {uuid:this.params.queryPhrase,type:this.params.filter},
 					function(datastore_response) {
 						self.chosenItemData(datastore_response);
+						var testArray = datastore_response['_z_relatedItems']['rel_instances'];
+						self.instances(datastore_response['_z_relatedItems']['rel_instances']);
 						$('.viewItem').append("<pre>"+JSON.stringify(datastore_response, null, 2)+"</pre>");
 					}
 				);	

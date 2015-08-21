@@ -29,6 +29,7 @@ def lookupRelatedDetails(v):
                 #if v matches a uuid pattern then search for the item in elasticsearch
                 if es_search.exists(id=pUuid, index='bibframe'):
                     uuidResult = es_search.get_source(id=pUuid, index='bibframe')
+                    #uuidResult = {'id':pUuid,'result':uuidResult}
                     returnList.append(uuidResult)
     if len(returnList) > 0:
         return returnList
@@ -37,7 +38,7 @@ def lookupRelatedDetails(v):
 	
 def findRelatedItems(filterFld,v):
     es_dsl = {'rel_instances':{}, 'rel_works':{}, 'rel_agents':{}, 'rel_topics':{}}
-    #print(filterFld)
+    print(filterFld)
     if "instances" in filterFld:
         print("enter Instance DSL")
         es_dsl['rel_instances'] = {
@@ -359,17 +360,17 @@ def itemDetails():
         resource = dict()
     result = es_search.get(id=uuid, index='bibframe')
     for k, v in result['_source'].items():
-        #print(k," : ",v," --> ",type(v))
+        print(k," : ",v," --> ",type(v))
         itemLookup = lookupRelatedDetails(v)
         if itemLookup:
             result['_source'][k] = {'uuid':result['_source'][k],'lookup':itemLookup}
     if doc_type == 'Work':
-        #print("*** work Type")
+        print("*** work Type")
         lookupFlds = {'instances':'bf:instanceOf'}
         relItems = findRelatedItems(lookupFlds, uuid)
     if doc_type == 'Person':
-        #print("*** Person Type")
-        lookupFlds = {'works':'bf:creator'}
+        print("*** Person Type")
+        lookupFlds = {'works':'bf:contributor'}
         relItems = findRelatedItems(lookupFlds, uuid)
     if doc_type == 'Topic':
         lookupFlds = {'works':'bf:subject'}

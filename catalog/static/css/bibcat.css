@@ -236,3 +236,6 @@ div[class^='tt-dataset']:hover .bg-info{
 	margin:0;
 	padding:0;
 }
+.viewInstances td, th {
+	border: 1px solid black;
+}

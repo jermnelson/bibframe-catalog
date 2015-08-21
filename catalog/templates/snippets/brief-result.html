@@ -27,7 +27,69 @@
 	<h1 data-bind="text: _type"></h1>
 	<!--<h1 data-bind="text: _source['bf:workTitle']['lookup'][0]['bf:titleValue']"></h1>-->
 	<h2 data-bind="text: 'Related Works'"></h2>
-	<!--<article class="media-body" data-bind="foreach: _z_relatedItems['rel_works']">
+	<div class='viewSubjects' data-bind="with: _source['bf:subject']">
+		<h2>Subjects</h2>
+		<ul data-bind="foreach: $data['lookup']">
+			<li>
+				<span data-bind="if: $data['fedora:uuid']">
+					<a data-bind="attr:{href: '#item/Topic/' + $data['fedora:uuid']}">
+						<span data-bind="text: $data['bf:label']"></span>
+					</a>
+				</span>
+				<span data-bind="ifnot: $data['fedora:uuid']">
+					<span data-bind="text: $data['bf:label']"></span>
+				</span>
+			</li>
+		</ul>
+	</div>
+	<div class='viewInstances' data-bind="with: _z_relatedItems['rel_instances']">
+		<h2>Instances</h2>
+		<table>
+			<thead>
+				<tr>
+					<th>_id</th>
+					<th>Derieved From</th>
+					<th>Dimensions</th>
+					<th>Formt</th>
+					<th>Illustration Note</th>
+					<!--<th>bf:instanceTitle</th>-->
+					<th>ISBN 10/13</th>
+					<th>LoC Ctrl #</th>
+					<th>bf:modeOfIssuance</th>
+					<th>bf:providerStatement</th>
+					<th>bf:publication</th>
+					<th>bf:supplementaryContentNote</th>
+					<th>bf:title</th>
+					<th>bf:titleStatement</th>
+				</tr>
+			</thead>
+			<tbody data-bind="foreach: $data">
+				<tr>
+					<td data-bind="text: _id"</td>
+					<td data-bind="text: _source['bf:derivedFrom'][0]"</td>
+					<td data-bind="text: _source['bf:dimensions'][0]"</td>
+					<td data-bind="text: _source['bf:format'][0]"</td>
+					<td data-bind="text: _source['bf:illustrationNote'][0]"</td>
+					<!--<td data-bind="text: _source['bf:instanceTitle'][0]"</td>-->
+					<td>
+						<a data-bind="attr: {target:'_blank', 'href': 'http://www.google.com/search?q=ISBN+' + new RegExp(/([^/]+$)/g).exec(_source['bf:isbn10'][0])[0] }">
+							<span data-bind="text: new RegExp(/([^/]+$)/g).exec(_source['bf:isbn10'][0])[0]"></span>
+						</a> / 
+						<a data-bind="attr: {target:'_blank', 'href': 'http://www.google.com/search?q=ISBN+' + new RegExp(/([^/]+$)/g).exec(_source['bf:isbn13'][0])[0] }">
+							<span data-bind="text: new RegExp(/([^/]+$)/g).exec(_source['bf:isbn13'][0])[0]"></span>
+						</a> 
+					</td>
+					<td data-bind="text: _source['bf:lccn'][0]"</td>
+					<td data-bind="text: _source['bf:modeOfIssuance'][0]"</td>
+					<td data-bind="text: _source['bf:providerStatement'][0]"</td>
+					<td data-bind="text: _source['bf:publication'][0]"</td>
+					<td data-bind="text: _source['bf:supplementaryContentNote'][0]"</td>
+					<td data-bind="text: _source['bf:title'][0]"</td>
+					<td data-bind="text: _source['bf:titleStatement'][0]"</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>	<!--<article class="media-body" data-bind="foreach: _z_relatedItems['rel_works']">
 		<h4 class="media-heading bibcat-text">
 			<a data-bind="attr: { href: '#item/'+_type+'/'+_id, title: _source['bf:authorizedAccessPoint']}">
 				<span data-bind="text: _source['bf:workTitle']"></span>

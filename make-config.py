@@ -1,6 +1,8 @@
 __author__ = "Jeremy Nelson"
 
 import argparse
+import hashlib
+import os
 import uuid 
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -27,7 +29,7 @@ if __name__ == '__main__':
         help='Elasticsearch URL, defaults to localhost:9200')
     parser.add_argument(
         '--secret_key',
-        default = uuid.uuid4(),
+        default = hashlib.sha1(os.urandom()).hexdigest(),
         help='Secret key, defaults to os.urandom()')
     args = parser.parse_args()
     create_config(args)

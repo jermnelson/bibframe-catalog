@@ -13,7 +13,7 @@ def create_config(args):
     os.mkdir(os.path.join(PROJECT_ROOT, "instance"))
     with open(CONFIG_PATH, "w+") as config:
         config.write("""SECRET_KEY="{}"\n""".format(args.secret_key))
-        config.write("""ELASTIC_SEARCH="{}"\n""".format(args.es_url))
+        config.write("""ELASTIC_SEARCH={}\n""".format(args.es_url))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

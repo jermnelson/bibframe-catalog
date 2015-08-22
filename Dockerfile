@@ -20,8 +20,7 @@ RUN git clone https://github.com/jermnelson/bibframe-catalog.git /opt/bibcat \
     && git checkout -b development \
     && git pull origin development \
     && pip3 install -r requirements.txt \
-    && mkdir instance \
-    && cp example-config.py instance/config.py \
+    && python3 make-config.py create \
     && rm /etc/nginx/sites-enabled/default \
     && cp bibcat.conf /etc/nginx/sites-available.conf \
     && ln -s /etc/nginx/sites-available/bibcat.conf /etc/nginx/sites-enabled/bibcat.conf

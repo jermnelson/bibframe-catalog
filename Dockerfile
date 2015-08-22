@@ -1,4 +1,4 @@
-# Dockerfile for BIBCAT
+#Dockerfile for BIBCAT
 FROM python:3.4.3
 MAINTAINER Jeremy Nelson <jermnelson@gmail.com>
 
@@ -22,10 +22,13 @@ RUN git clone https://github.com/jermnelson/bibframe-catalog.git /opt/bibcat \
     && pip3 install -r requirements.txt \
     && python3 make-config.py create \
     && rm /etc/nginx/sites-enabled/default \
-    && cp bibcat.conf /etc/nginx/sites-available.conf \
+    && cp bibcat.conf /etc/nginx/sites-available/bibcat.conf \
     && ln -s /etc/nginx/sites-available/bibcat.conf /etc/nginx/sites-enabled/bibcat.conf
+    
+
 
 EXPOSE 80
 WORKDIR /opt/bibcat
-# Run application with uwsgi socket
-CMD uwsgi -s /tmp/bibcat-uwsgi.sock -w runserver:app --chmod-socket=666 
+# Run application with uwsgi socket with nginx
+RUN nohup uwsgi -s /tmp/bibcat.sock -w runserver:app --chmod-socket=666 &
+CMD ["nginx", "-g", "daemon off;"]

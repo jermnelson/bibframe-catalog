@@ -30,5 +30,4 @@ RUN git clone https://github.com/jermnelson/bibframe-catalog.git /opt/bibcat \
 EXPOSE 80
 WORKDIR /opt/bibcat
 # Run application with uwsgi socket with nginx
-RUN nohup uwsgi -s /tmp/bibcat.sock -w runserver:app --chmod-socket=666 &
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

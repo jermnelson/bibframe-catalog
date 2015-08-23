@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y && \
 # Retrieve latest master branch of bibframe-catalog project on 
 # github.coma
 RUN git clone https://github.com/jermnelson/bibframe-catalog.git $BIBCAT_HOME \
-    && cd $BIBCAT_HOME/opt/bibcat \
+    && cd $BIBCAT_HOME \
     && git checkout -b development \
     && git pull origin development \
     && pip3 install -r requirements.txt \
@@ -30,5 +30,5 @@ RUN git clone https://github.com/jermnelson/bibframe-catalog.git $BIBCAT_HOME \
 EXPOSE 80
 WORKDIR $BIBCAT_HOME
 # Run application with uwsgi socket with nginx
-COPY docker-entrypoint.sh $BIBCAT_HOME
+COPY docker-entrypoint.sh $BIBCAT_HOME/
 ENTRYPOINT ["./docker-entrypoint.sh"]

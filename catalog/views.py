@@ -211,7 +211,8 @@ def __generate_sort__(sort, doc_type):
 def kibana(url):
     if not 'username' in session:
         raise abort(403)
-    req = requests.get(url, stream=True)
+    kibana_url = config.get('KIBANA_URL') + url
+    req = requests.get(kibana_url, stream=True)
     return Response(
         stream_with_context(
             req.iter_content()), content_type = req.headers['content-type'])

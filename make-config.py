@@ -16,6 +16,7 @@ def create_config(args):
     with open(CONFIG_PATH, "w+") as config:
         config.write("""SECRET_KEY="{}"\n""".format(args.secret_key))
         config.write("""ELASTIC_SEARCH="{}"\n""".format(args.es_url))
+        config.write("""KIBANA_URL="{}"\n""".format(args.kibana_url))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -31,5 +32,8 @@ if __name__ == '__main__':
         '--secret_key',
         default = hashlib.sha1(os.urandom(30)).hexdigest(),
         help='Secret key, defaults to os.urandom()')
+    parser.add_argument(
+        '--kibana_url'
+        default='kibana:5601')
     args = parser.parse_args()
     create_config(args)

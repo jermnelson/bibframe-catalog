@@ -1,5 +1,5 @@
 # Dockerfile for BIBCAT
-FROM ubuntu:14.04.2
+FROM python:3.4.3
 MAINTAINER Jeremy Nelson <jermnelson@gmail.com>
 
 # Set environmental variables

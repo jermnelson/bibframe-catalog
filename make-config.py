@@ -29,7 +29,7 @@ if __name__ == '__main__':
         help='Elasticsearch URL, defaults to localhost:9200')
     parser.add_argument(
         '--secret_key',
-        default = hashlib.sha1(os.urandom()).hexdigest(),
+        default = hashlib.sha1(os.urandom(30)).hexdigest(),
         help='Secret key, defaults to os.urandom()')
     args = parser.parse_args()
     create_config(args)

@@ -25,7 +25,7 @@ if __name__ == '__main__':
         help='Creates Bibcat Instance Configuration')
     parser.add_argument(
         '--es_url',
-        default='localhost:9200',
+        default='bf_search:9200',
         help='Elasticsearch URL, defaults to localhost:9200')
     parser.add_argument(
         '--secret_key',

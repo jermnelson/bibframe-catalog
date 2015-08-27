@@ -3,6 +3,7 @@
 .*.sw*
 *.jar
 .DS*
+*.out
 *egg-info*
 __pycache__
 instance/*

@@ -25,10 +25,8 @@ RUN git clone https://github.com/jermnelson/bibframe-catalog.git /opt/bibcat \
     && cp bibcat.conf /etc/nginx/sites-available/bibcat.conf \
     && ln -s /etc/nginx/sites-available/bibcat.conf /etc/nginx/sites-enabled/bibcat.conf
     
-
-
 EXPOSE 80
 WORKDIR /opt/bibcat
 # Run application with uwsgi socket with nginx
 COPY docker-entrypoint.sh /opt/bibcat/
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

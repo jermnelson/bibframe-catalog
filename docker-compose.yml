@@ -1,0 +1,9 @@
+web:
+  build: .
+  links:
+   - bf_datastore
+  ports:
+   - "22:22"
+   - "80:80"
+bf_datastore:
+  image: bfDatastore

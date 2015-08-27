@@ -1,0 +1,25 @@
+<div class="bibcat-text lead">
+ {# item.get('fedora:uuid') #}
+ {% if 'bf:shelfMarkLcc' in item %}
+   {{ item.get('bf:shelfMarkLcc')[0] }}
+ {% endif %}
+ {{ item.get('bf:heldBy')[0] }}
+ {% if 'bf:subLocation' in item %}
+   : {{ item.get('bf:subLocation')[0] }}
+ {% endif %}
+{% if 'bf:circulationStatus' in item %}
+   {{ item.get('bf:circulationStatus')[0] }}
+{% else %}
+     AVAILABLE
+{% endif %} 
+
+{# if 'bf:label' in item %}
+   {{ item.get('bf:holdingFor')|name }} 
+{{ item.get('bf:heldBy')|get_label }}
+{% if 'bf:subLocation' in item %}
+  {{ item.get('bf:subLocation') }}
+{% endif %}
+{{ item.get('bf:circulationStatus', 'AVAILABLE').value }} 
+  <a href="#" class="bibcat-text" onclick="alert('Display map for {{ item.get('bf:itemId').0  }}')">Map it</a>
+{% endif #}
+</div>

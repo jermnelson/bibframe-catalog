@@ -1,0 +1,5 @@
+.git
+*.egg
+*.pyc
+Dockerfile
+README*

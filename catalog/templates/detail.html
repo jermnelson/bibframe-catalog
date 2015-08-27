@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block more_css %}
+<style>
+ .table_border {
+  border: 1px solid black;
+ }
+</style>
+{% endblock %}
+
+{% block body %}
+<article>
+<h2 class="bibcat-title"><em>{% for type in entity['type'] %}{% if type.startswith('bf') %}{{ type }} {% endif %}{% endfor %} Display <small>v</smalL>{{ version }}</em></h2>
+<h1 class="bibcat-title">{{ entity|name }}</h1>
+<ul>
+ <li><a class="bibcat-text" href="#result">Search Result</a></li>
+ <li><a class="bibcat-text" href="#related">Related BIBFRAME Resources</a></li>
+ <li><a class="bibcat-text" href="/{{ entity['_id'] }}.json">JSON-LD</a></li>
+</ul>
+<a name="result"></a>
+<h3 class="bibcat-title">Elastic Search Result</h3>
+<dl class="well">
+ {% for key, val in entity.items() %}
+ <dt>{{ key }}</dt>
+ <dd>{{ val }}</dd>
+ {% endfor %}
+</dl>
+{#
+<a href="rdf"></a>
+<h3>Fedora RDF</h3>
+<table class="table_border">
+ <tr class="table_border">
+  <th>Predicate</th>
+  <th>Object</th>
+ </tr>
+ {% for p,o in graph.predicate_objects() %}
+ <tr>
+   <td class="table_border">{{ p }}</td>
+   <td class="table_border">{{ o }}</td>
+ </tr>
+ {% endfor %}
+</table>
+<a name="related"></a>
+<h3 class="bibcat-title">Related BIBFRAME Resources</h3>
+<section class="well">
+<p>
+ <strong>Total:</strong> {{ related['hits']['total'] }}
+</p>
+<ol>
+{% for hit in related['hits']['hits'] %}
+{% set resource = hit['_source'] %}
+{% if resource['fedora:uuid'][0] !=  entity['fedora:uuid'][0] %}
+<li>
+ <a href="/{{ resource['fedora:uuid'][0] }}"> {% for type in resource['type'] %}<em>{{ type }}</em>{% endfor %}
+  {{ resource|name }}
+ </a>
+</li>
+{% endif %}
+{% endfor %}
+</ol>
+</section>
+#}
+</article>
+{% endblock %} 

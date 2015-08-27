@@ -1,0 +1,12 @@
+Flask>=0.10.1
+Flask-WTF
+Flask-Negotiate>=0.1.0
+Markdown>=2.3.1
+elasticsearch>=1.1.1
+pylint>=1.3.1
+pymarc>=3.0.3
+rdflib>=4.1.2
+rdflib-jsonld>=0.2-dev
+requests
+simplepam
+uwsgi

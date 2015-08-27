@@ -1,0 +1,238 @@
+.bf_searchToolbar {
+	border-bottom: 1px solid lightgrey;
+	margin-left: 2px;
+	width: 100%
+}
+.bf_searchToolbar ul{ 
+	
+	background-color: white; 
+	list-style-type: none; 
+	padding: 0; 
+	margin: 0; 
+	border-radius:0px; 
+	margin: 0px 0px 0px 0px;
+	font-size: 0px;
+}
+.bf_searchToolbar li:hover { 
+	background-color: #002952;
+	color: white; 
+}    
+.bf_searchToolbar li:first-child { 
+	border-left: none; border-radius: 0px 0 0 0px; 
+}
+.bf_searchToolbar li { 
+	font-size: 16px; 
+	font-weight: bold; 
+	display: inline-block; 
+	padding: 0px 10px 0px 10px; 
+	cursor: pointer; 
+	color: #337ab7; 
+	margin: 0px;
+	border-left: 1px solid #ddd; 
+	border-right: 1px solid #888; 
+}
+.bf_searchToolbar li { *display: inline !important; } /* IE7 only */
+.bf_searchToolbar .selected { 
+	background-color: #F2F2F2 !important; 
+
+	color: #00478F !important; 
+	text-shadow:none; 
+	border-color: #B3B3B3; 
+	border-left: none; 
+	box-shadow:inset 1px 2px 3px #999999; 
+} 
+.bfSortOptions {
+	width: 200px;
+	background-color: white !important;
+	color: #337ab7 !important;
+}
+.bfSortOptions span {
+	font-weight: bolder;
+	color: darkblue;
+}
+
+.bfSortOptions li {
+	display:initial;
+}
+.bfSortUl {
+	position:absolute;
+	z-index:20;
+	background-color:white;
+	border: 1px solid lightgrey;
+	padding: 0px 0px 0px 0px;
+	margin: 0px 0px 0px 60px;
+	width: 157px;
+	list-style-type: none;
+	display:none;
+}
+.bfSortUl li{
+	padding-left:10px;
+	display:list-item;
+}-
+.bfSortUl li:hover {
+	background:#337ab7;
+	color:white;
+	cursor:pointer;
+}
+span.twitter-typeahead {
+  width: 100%;
+}
+.input-group span.twitter-typeahead {
+  display: block !important;
+}
+.input-group span.twitter-typeahead .tt-dropdown-menu {
+  top: 32px !important;
+}
+.input-group.input-group-lg span.twitter-typeahead .tt-dropdown-menu {
+  top: 44px !important;
+}
+.input-group.input-group-sm span.twitter-typeahead .tt-dropdown-menu {
+  top: 28px !important;
+}
+
+
+.tt-query {
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+     -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+}
+
+.tt-hint {
+  color: #999
+}
+
+.tt-dropdown-menu {
+  width: 505px;
+  margin-top: 4px;
+  padding: 4px 0;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  -webkit-border-radius: 4px;
+     -moz-border-radius: 4px;
+          border-radius: 4px;
+  -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+     -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+          box-shadow: 0 5px 10px rgba(0,0,0,.2);
+}
+
+.tt-suggestion {
+  padding: 3px 20px;
+  line-height: 24px;
+   height: 20px;
+   overflow:hidden;
+   
+}
+
+.tt-suggestion.tt-cursor {
+  color: #fff;
+  background-color: lightgray;
+}
+.tt-suggestions {
+  border-right:1px solid   grey;
+}
+.tt-suggestion p {
+  margin: 0;
+  font-style:italic;
+  font-weight:normal;
+}
+div[class^='tt-dataset'] {
+  float: left;
+  width:75px;
+} 
+.bg-info {
+  height:25px;
+  overflow:hidden;
+  border-bottom:1px solid grey;
+  border-right:1px solid   grey;
+  background-color:white;
+  font-style:italic;
+  margin:0;
+  padding:0;
+  color: grey;
+  font-size:-1em;
+}
+.tt-selectedDataSet {
+  width:275px !important;
+  font-style:normal;
+
+}
+.tt-selectedDataSet .tt-suggestion {
+  height:initial;
+  
+}
+.tt-selectedDataSet .tt-suggestion p{
+  font-style:normal;
+}
+.tt-selectedDataSet .bg-info{
+	 
+	color: #00478F !important; 
+	/*background-color: #F2F2F2 !important;
+	text-shadow:none; 
+	border-color: #B3B3B3; 
+	border-left: none; 
+	box-shadow:inset 1px 2px 3px #999999;*/ 
+	font-style:normal;
+}
+
+div[class^='tt-dataset']:hover {
+  width:275px;
+  font-style:normal;
+
+}
+div[class^='tt-dataset']:hover .tt-suggestion {
+  height:initial;
+  
+}
+div[class^='tt-dataset']:hover .tt-suggestion p{
+  font-style:normal;
+}
+div[class^='tt-dataset']:hover .bg-info{
+	 
+	color: #00478F !important; 
+	/*background-color: #F2F2F2 !important;
+	text-shadow:none; 
+	border-color: #B3B3B3; 
+	border-left: none; 
+	box-shadow:inset 1px 2px 3px #999999;*/ 
+	font-style:normal;
+}
+
+
+
+
+.searchBoxFloat, .logoFloat {
+	position:fixed;
+	top:0px;
+	background:white;
+}
+.logoFloat{
+	z-index:10;
+}
+.appLogo img {
+	float:left;
+	height: 48px;
+	position:fixed;
+}
+.appLogoSpacer img {
+	float:left;
+	height: 48px;
+	visibility:hidden;
+}
+.bibcat-title {
+	margin-top: 5px;
+}
+.appHeaderLogoSpacer img {
+	float:left;
+	height: 48px;
+	visibility:hidden;
+
+}
+.bc_searchSubBox .col-md-6{
+
+	float:left
+}
+.bc_searchBox form {
+	margin:0;
+	padding:0;
+}

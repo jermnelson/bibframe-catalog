@@ -1,0 +1,45 @@
+<hr class="bibcat" data-bind="visible: searchResults().length > 0">
+<section class="container" id="scroll-container">
+	<ul class="media-list" id="Results" data-bind="foreach: searchResults">
+		<li class="media" itemscope> 
+			<h3 class="media-heading bibcat-title"> 
+				<a class="bibcat-title" data-bind="attr: { 'href': url }">
+					<span data-bind="text: title"></span> / <span data-bind="text: author"></span> 
+				</a>
+			</h3>
+		<div class="media-left">
+			<a href="#" itemscope itemtype="http://bibframe.org/vocab/CoverArt">
+				<img data-bind="attr: { src: cover_url }"  class="media-object" {#src="{{ url_for('static', filename='images/cover-placeholder.png') }}"#} >
+			</a>
+		</div>
+		<article class="media-body" data-bind="foreach: held_items">
+			<h4 class="media-heading bibcat-text">
+				<span data-bind="text: subLocation"></span>
+				<span data-bind="text: shelfMarkLcc"></span>
+				<span data-bind="text: circulationStatus"></span> - 
+				<a class="bibcat-text" onclick="alert('Coming soon!')">Map it</a>
+			</h4>
+		</article> 
+		</li>
+	</ul> 
+</section>
+<div class="viewItem" data-bind="with: chosenItemData">
+	<h1 data-bind="text: _type"></h1>
+	<!--<h1 data-bind="text: _source['bf:workTitle']['lookup'][0]['bf:titleValue']"></h1>-->
+	<h2 data-bind="text: 'Related Works'"></h2>
+	<!--<article class="media-body" data-bind="foreach: _z_relatedItems['rel_works']">
+		<h4 class="media-heading bibcat-text">
+			<a data-bind="attr: { href: '#item/'+_type+'/'+_id, title: _source['bf:authorizedAccessPoint']}">
+				<span data-bind="text: _source['bf:workTitle']"></span>
+			</a>
+			<span data-bind="text: _source['bf:authorizedAccessPoint']"></span>
+		</h4>
+	</article> -->
+	<!--<div class="itemInfo">
+		
+		<p><label>From</label>: <span data-bind="text: from"></span></p>
+		<p><label>To</label>: <span data-bind="text: to"></span></p>
+		<p><label>Date</label>: <span data-bind="text: date"></span></p>
+	</div>
+	<p class="message" data-bind="html: messageContent" />-->
+</div>

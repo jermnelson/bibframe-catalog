@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="shortcut icon" href="{{ url_for('static', filename='images/bc-logo-blue.ico') }}">
+		<link href='http://fonts.googleapis.com/css?family=Raleway:400,500' rel='stylesheet' type='text/css'>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>{% block head_title %}BIBCAT - BIBFRAME Access and Discovery Catalog{% endblock %}</title>
+		{% block css %}
+			<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+			<link rel="stylesheet" href="{{ url_for('static', filename='css/bibcat.css') }}">
+			<link rel="stylesheet" href="{{ url_for('static', filename='css/bf_SearchToolbar.css') }}">
+		{% endblock %}
+
+		{% block more_css %}
+		{% endblock %}
+	</head>
+	<body class="container bibcat-background">
+		{% block header %}
+		 {% include 'snippets/header.html' %}
+		{% endblock %}
+
+		{% block body %}
+		{% endblock %}
+
+		{% block footer %}
+		  {% include 'snippets/footer.html' %}
+		{% endblock %}
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/sammy.js/0.7.6/sammy.min.js"></script>  
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
+		<script src="{{ url_for('static', filename='js/typeahead.bundle.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/bibcat_utilityFunctions.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/bibcat_searchToolbar.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/bibcat_tt.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/bibcat.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/bibcat_main.js') }}"></script>
+	  {% block activity %}
+	  {% endblock %}
+  </body>
+</html>

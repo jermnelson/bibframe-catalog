@@ -33,7 +33,7 @@ if __name__ == '__main__':
         default = hashlib.sha1(os.urandom(30)).hexdigest(),
         help='Secret key, defaults to os.urandom()')
     parser.add_argument(
-        '--kibana_url'
+        '--kibana_url',
         default='kibana:5601')
     args = parser.parse_args()
     create_config(args)

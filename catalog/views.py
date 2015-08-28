@@ -8,17 +8,25 @@ import requests
 import logging
 import re
 
-from simplepam import authenticate
 
 from elasticsearch.exceptions import NotFoundError
 from flask import abort, jsonify, render_template, redirect
 from flask import request, session, send_file, url_for
 from flask import stream_with_context, Response
 
+
+
 from .forms import BasicSearch
 from . import app, datastore_url, es_search, __version__
 from .filters import *
 from .filters import __get_cover_art__, __get_held_items__
+
+try:
+    from simplepam import authenticate
+except ImportError:
+    def authenticate(user, pwd):
+        return True
+
 
 uuidPattern = re.compile('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89aAbB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}')
 
@@ -207,12 +215,20 @@ def __generate_sort__(sort, doc_type):
     return output
     
 # Reporting Module Routes
+@app.route("/kibana/")
 @app.route("/kibana/<path:url>")
-def kibana(url):
+def kibana(url=None):
     if not 'username' in session:
         raise abort(403)
-    kibana_url = config.get('KIBANA_URL') + url
-    req = requests.get(kibana_url, stream=True)
+    kibana_url = app.config.get('KIBANA_URL')
+    if not kibana_url.startswith("http"):
+        kibana_url = 'http://' + kibana_url
+    if url and not url.startswith('http'):
+        url = "{}/{}".format(kibana_url,url)
+    else:
+        url = kibana_url
+    #print(kibana_url)
+    req = requests.get(url, stream=True)
     return Response(
         stream_with_context(
             req.iter_content()), content_type = req.headers['content-type'])

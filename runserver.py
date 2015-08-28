@@ -21,7 +21,7 @@ application = DispatcherMiddleware(
 
 def main(args):
     debug = args.debug or True
-    app.run(host='0.0.0.0', port=8001, debug=debug)
+    app.run(host='0.0.0.0', port=8000, debug=debug)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

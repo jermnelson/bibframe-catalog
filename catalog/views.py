@@ -18,8 +18,7 @@ from flask import stream_with_context, Response
 from .forms import BasicSearch
 from . import app, datastore_url, es_search, __version__
 from .filters import *
-from .filters import __get_cover_art__, __get_held_items__
-from .util import *
+from .util import __expand_instance__, __get_cover_art__, __get_held_items__
 
 try:
     from simplepam import authenticate
@@ -254,6 +253,112 @@ def itemDetails():
     result['_z_relatedItems'] = relItems    
     resource.update(result)
     return jsonify(resource)
+
+@app.route("/classcount")
+def itemCounts():
+    es_dsl = {
+                "query": {
+                    "query_string": {
+                        "query": "*",
+                        "analyze_wildcard": True
+                    }
+                },
+                "size": 0,
+                "aggs": {
+                    "2": {
+                        "terms": {
+                            "field": "_type",
+                            "size": 20,
+                            "order": {
+                                "_count": "desc"
+                            }
+                        }
+                    }
+                }
+            }
+    bfMajorSum = es_search.search(
+        body=es_dsl, 
+        index='bibframe', 
+        size=0)
+    es_dsl = {
+                "query": {
+                    "query_string": {
+                        "query": "*",
+                        "analyze_wildcard": True
+                    }
+                },
+                "size": 0,
+                "aggs": {
+                    "2": {
+                        "terms": {
+                            "field": "type",
+                            "size": 100,
+                            "order": {
+                                "_count": "desc"
+                            }
+                        }
+                    }
+                }
+            }
+    bfTypeSum = es_search.search(
+        body=es_dsl, 
+        index='bibframe', 
+        size=0)
+    es_dsl = {
+  "query": {
+    "query_string": {
+      "query": "*",
+      "analyze_wildcard": True
+    }
+  },
+  "size": 0,
+  "aggs": {
+    "2": {
+      "filters": {
+        "filters": {
+          "type:\"bf:Person\"": {
+            "query": {
+              "query_string": {
+                "query": "type:\"bf:Person\"",
+                "analyze_wildcard": True
+              }
+            }
+          },
+          "type:\"bf:Organization\"": {
+            "query": {
+              "query_string": {
+                "query": "type:\"bf:Organization\"",
+                "analyze_wildcard": True
+              }
+            }
+          },
+          "type:\"bf:Topic\"": {
+            "query": {
+              "query_string": {
+                "query": "type:\"bf:Topic\"",
+                "analyze_wildcard": True
+              }
+            }
+          },
+          "type:\"bf:Place\"": {
+            "query": {
+              "query_string": {
+                "query": "type:\"bf:Place\"",
+                "analyze_wildcard": True
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+    bfAuthSum = es_search.search(
+        body=es_dsl, 
+        index='bibframe', 
+        size=0)
+    result = {'bfTypeSum':bfTypeSum,'bfMajorSum':bfMajorSum,'bfAuthSum':bfAuthSum}
+    return jsonify(result)
 
 @app.route("/")
 def index():

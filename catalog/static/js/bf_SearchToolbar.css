@@ -83,30 +83,13 @@
 	background-color: white !important;
 	cursor:default !important;
 }
-.bibcatName {
-	width:90%
+.col-md-4 {
+	width:90%;
 }
-.bibcat-title {
-	display:inline-block;
+.bibcat-title{
+	display:inline;
 }
 .masterMenu {
-	margin-top:4px;
-	float: right;
-}
-.sumTable {
-	float:left;
-	margin-right:10px;
-	border:1px solid black;
-}
-.sumTable table th, td{
-	border-collapse:collapse;
-	border:none;
-	text-align:center
-
-}
-.viewClassTitle {
-	width:100%;
-	
-	font-size: 40px;
-	font-weight: bold;
+	float:right;
+	margin-top: 4px;
 }

@@ -2,6 +2,7 @@
 *.swp
 .*.sw*
 *.jar
+*.bak
 .DS*
 *.out
 *egg-info*

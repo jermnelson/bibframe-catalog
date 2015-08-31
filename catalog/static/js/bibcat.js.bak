@@ -25,7 +25,7 @@ function CatalogViewModel() {
 	self.queryPhraseForResults = ko.observable()
 	self.errorMsg = ko.observable("");
 	self.searchResults = ko.observableArray();
-	self.shardSize = ko.observable(8);
+	self.shardSize = ko.observable(20);
 	self.totalResults = ko.observable(0);
 	self.csrf_token = $('#csrf_token').val();
 	self.search_url = $('#search-url').val();
@@ -33,7 +33,11 @@ function CatalogViewModel() {
 	self.chosenBfSortViewId = ko.observable();
 	self.chosenItemData = ko.observable();
 	self.viewMode = ko.observable();
+	self.showClassCounts = ko.observable();
 	self.instances = ko.observableArray();
+	self.sumBfTypes = ko.observableArray();
+	self.sumAuthTypes = ko.observableArray();
+	self.sumMajBfTypes = ko.observableArray();
 	self.sortState = ko.computed(function() {
 									return self.chosenBfSortViewId();    
 								}, this);
@@ -77,39 +81,69 @@ function CatalogViewModel() {
     // Client-side routes    
     Sammy(function() {
         this.get('#:sort/:filter/:queryPhrase', function() {
+        		self.sumBfTypes([]);
+        		self.sumAuthTypes([]);
+        		self.sumMajBfTypes([]);
             self.searchResults([]);
+            self.showClassCounts(null);
             $(".tt-dropdown-menu").hide();
             var queryStr = (this.params.queryPhrase == '#$'?"":this.params.queryPhrase);
             if (this.params.sort === "item") { //load items details into 
-				self.viewMode('item');	
-				$('.bf_searchToolbar').hide();
-				$.get("/itemDetails",
-					data = {uuid:this.params.queryPhrase,type:this.params.filter},
-					function(datastore_response) {
-						self.chosenItemData(datastore_response);
-						var testArray = datastore_response['_z_relatedItems']['rel_instances'];
-						self.instances(datastore_response['_z_relatedItems']['rel_instances']);
-						$('.viewItem').append("<pre>"+JSON.stringify(datastore_response, null, 2)+"</pre>");
-					}
-				);	
+							self.viewMode('item');	
+							$('.bf_searchToolbar').hide();
+							$.get("/itemDetails",
+								data = {uuid:this.params.queryPhrase,type:this.params.filter},
+								function(datastore_response) {
+									self.chosenItemData(datastore_response);
+									var testArray = datastore_response['_z_relatedItems']['rel_instances'];
+									self.instances(datastore_response['_z_relatedItems']['rel_instances']);
+									$('.viewItem').append("<pre>"+JSON.stringify(datastore_response, null, 2)+"</pre>");
+								}
+							);	
             } else {
-				self.viewMode('search');	
-				self.chosenItemData(null);
-				var sFilter = (isNotNull(this.params.filter)?this.params.filter:'All');
-				var	sView = (isNotNull(this.params.sort)?this.params.sort:'Relevance');
-				self.chosenBfSearchViewId(sFilter);
-				self.chosenBfSortViewId(sView);
-				self.queryPhrase(queryStr);		
-				if (isNotNull(queryStr)) {
-					$('.bf_searchToolbar').show();
-					self.from(0);
-					searchCatalog();
-				} else {
-					$('.bf_searchToolbar').hide();
-				};
-			};
-			$(window).scrollTop(0);
+            	
+							self.viewMode('search');	
+							self.chosenItemData(null);
+							var sFilter = (isNotNull(this.params.filter)?this.params.filter:'All');
+							var	sView = (isNotNull(this.params.sort)?this.params.sort:'Relevance');
+							self.chosenBfSearchViewId(sFilter);
+							self.chosenBfSortViewId(sView);
+							self.queryPhrase(queryStr);		
+							if (isNotNull(queryStr)) {
+								$('.bf_searchToolbar').show();
+								self.from(0);
+								searchCatalog();
+							} else {
+								$('.bf_searchToolbar').hide();
+							};
+						};
+						$(window).scrollTop(0);
         });
+        this.get('#:classcount', function() {
+        	self.viewMode('item');
+        	$('.bf_searchToolbar').hide();
+        	self.searchResults([]);
+        	self.chosenItemData(null);
+        	self.showClassCounts(true);
+        	$.get("/classcount",
+								data = {req:'none'},
+								function(datastore_response) {
+									var testArray = datastore_response;
+									self.sumBfTypes(datastore_response['bfTypeSum']['aggregations']['2']['buckets']);
+									self.sumAuthTypes(datastore_response['bfAuthSum']['aggregations']['2']['buckets']);
+									self.sumMajBfTypes(datastore_response['bfMajorSum']['aggregations']['2']['buckets']);
+									var tempObj = datastore_response['bfAuthSum']['aggregations']['2']['buckets'];
+									var tempArray = []
+									for (var key in tempObj) {
+										tempArray.push({'doc_count':tempObj[key]['doc_count'],'key':key.replace(/"/g,'')})
+									}
+									self.sumAuthTypes(tempArray);
+									//$('.viewItem').append("<pre>"+JSON.stringify(datastore_response, null, 2)+"</pre>");
+								}
+							);
+					}
+				);
+        
         this.get('', function() { this.app.runRoute('get', '#Relevance/All/#$') });
     }).run();
 

@@ -24,6 +24,66 @@
 		</li>
 	</ul> 
 </section>
+<div class="viewClassCount" data-bind="if: showClassCounts">
+	<div class='viewClassTitle'>Summaries of Items</div>
+	<div class='sumTable'>
+		<table>
+			<thead>
+				<tr><th colspan=2><h2>BF Major Type Summary</h2></th></tr>
+				<tr><th colspan=2><a href="http://104.131.39.41:5601/#/visualize/edit/Summarization-by-Major-Bibframe-Types?_g=()&_a=(filters:!(),linked:!f,query:(query_string:(analyze_wildcard:!t,query:'*')),vis:(aggs:!((id:'1',params:(),schema:metric,type:count),(id:'2',params:(field:_type,order:desc,orderBy:'1',size:20),schema:bucket,type:terms)),listeners:(),params:(perPage:20,showMeticsAtAllLevels:!f,showPartialRows:!f),type:table))" target="_blank">View in Kibana</a></th></tr>
+				<tr>
+					<th>Major Type</th><th>Count</th>
+				</tr>
+			</thead>
+			<tbody data-bind="foreach: sumMajBfTypes">
+				<tr>
+					<td data-bind="text: $data['key']"></td>
+					<td data-bind="text: $data['doc_count']"></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<div class='sumTable'>
+		<table>
+			<thead>
+				<tr><th colspan=2><h2>BF Type Summary</h2></th></tr>
+				<tr><th colspan=2><a href="http://104.131.39.41:5601/#/visualize/edit/Summarization-by-Bibframe-Types?_g=()&_a=(filters:!(),linked:!f,query:(query_string:(analyze_wildcard:!t,query:'*')),vis:(aggs:!((id:'1',params:(),schema:metric,type:count),(id:'2',params:(field:type,order:desc,orderBy:'1',size:100),schema:bucket,type:terms)),listeners:(),params:(perPage:200,showMeticsAtAllLevels:!f,showPartialRows:!f),type:table))" target="_blank">View in Kibana</a></th></tr>
+				<tr>
+					<th>BF Types</th><th>Count</th>
+				</tr>
+			</thead>
+			<tbody data-bind="foreach: sumBfTypes">
+				<tr>
+					<td data-bind="text: $data['key']"></td>
+					<td data-bind="text: $data['doc_count']"></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<div class='sumTable'>
+		<table>
+			<thead>
+				<tr><th colspan=2><h2>BF Authority Summary</h2></th></tr>
+				<tr><th colspan=2><a href="http://104.131.39.41:5601/#/visualize/edit/Authorities-by-Type?_g=()&_a=(filters:!(),linked:!f,query:(query_string:(analyze_wildcard:!t,query:'*')),vis:(aggs:!((id:'1',params:(),schema:metric,type:count),(id:'2',params:(filters:!((input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Person%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Organization%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Topic%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Place%22')))))),schema:bucket,type:filters)),listeners:(),params:(perPage:10,showMeticsAtAllLevels:!f,showPartialRows:!f),type:table))">View in Kibana</a></th></tr>
+				<tr>
+					<th>BF Types</th><th>Count</th>
+				</tr>
+			</thead>
+			<tbody data-bind="foreach: sumAuthTypes">
+				<tr>
+					<td data-bind="text: $data['key']"></td>
+					<td data-bind="text: $data['doc_count']"></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<div><table><tr><td>
+			<h2>Other Counts</h2>
+			<h3><a href="http://104.131.39.41:5601/#/visualize/edit/Instances-Subclasses-slash-Types?_g=()&_a=(filters:!(),linked:!f,query:(query_string:(analyze_wildcard:!t,query:'*')),vis:(aggs:!((id:'1',params:(),schema:metric,type:count),(id:'2',params:(filters:!((input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Electronic%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Archival%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Collection%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Integrating%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Manuscript%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Monograph%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:MultipartMonograph%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Print%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Serial%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Tactile%22')))))),schema:bucket,type:filters)),listeners:(),params:(perPage:10,showMeticsAtAllLevels:!f,showPartialRows:!f),type:table))" target="_blank">Kibana Link - Instances: Subclasses</a></h3>
+			<h3><a href="http://104.131.39.41:5601/#/visualize/edit/Works-Subclasses-slash-Types?_g=()&_a=(filters:!(),linked:!f,query:(query_string:(analyze_wildcard:!t,query:'*')),vis:(aggs:!((id:'1',params:(),schema:metric,type:count),(id:'2',params:(filters:!((input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Audio%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Dataset%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:MixedMedia%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Monograph%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:MovingImage%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:NotatedMovement%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:NotatedMusic%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:StillImage%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Cartography%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Text%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:Multimedia%22')))),(input:(query:(query_string:(analyze_wildcard:!t,query:'type:%22bf:ThreeDimensionalObject%22')))))),schema:bucket,type:filters)),listeners:(),params:(perPage:20,showMeticsAtAllLevels:!f,showPartialRows:!f),type:table))" target="_blank">Kibana Link - Works: Subclasses</a></h3>
+		</td></tr></table>
+	</div>
+</div>
 <div class="viewItem" data-bind="with: chosenItemData">
 	<h1 data-bind="text: _type"></h1>
 	<h1 data-bind="testNullObj: [_source,['bf:workTitle','lookup',0,'bf:titleValue',0]]">title</h1>
@@ -110,3 +170,4 @@
 	</div>
 	<p class="message" data-bind="html: messageContent" />-->
 </div>
+

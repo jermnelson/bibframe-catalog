@@ -26,7 +26,7 @@ from flask import render_template, url_for
 from .forms import BasicSearch
 import sys
 from . import app, datastore_url, es_search
-from .util import lookupRelatedDetails
+from .util import *
 
 PREFIX = """PREFIX bf: <http://bibframe.org/vocab/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -112,75 +112,8 @@ WHERE {{{{
  ?held_item fedora:uuid ?uuid .
 }}}}""".format(PREFIX)
 
-def __get_cover_art__(instance_uuid):
-    """Helper function takes an instance_uuid and searches for 
-    any cover art, returning the CoverArt ID and schema:isBasedOnUrl.
-    This may change in the future versions.
-
-    Args:
-        instance_uuid -- RDF fedora:uuid 
-    """
-    es_dsl = {
-      "fields": ['schema:isBasedOnUrl'],
-      "query": {
-        "filtered": {
-          "filter": [
-            {"term": { 
-              "bf:coverArtFor": instance_uuid}
-            }
-          ]
-        }
-      }
-     }
-    result = es_search.search(
-        body=es_dsl,
-        index='bibframe')
-    if result.get('hits').get('total') > 0:
-        top_hit = result['hits']['hits'][0]
-        return {"src": url_for('cover', uuid=top_hit['_id'], ext='jpg'),
-                "url": top_hit['fields']['schema:isBasedOnUrl']}
 
 
-def __get_held_items__(instance_uuid):
-    """Helper function takes an instance uuid and search for any heldItems
-    that match the instance, returning the circulation status and 
-    name of the organization that holds the item
-
-    Args:
-      instance_uuid -- RDF fedora:uuid
-    """
-    items = list()
-    es_dsl = {
-      "fields": ['bf:circulationStatus', 
-                 'bf:heldBy', 
-                 'bf:itemId',
-                 'bf:shelfMarkLcc',
-                 'bf:subLocation'],
-
-      "query": {
-        "filtered": {
-          "filter": [
-            {"term": { 
-              "bf:holdingFor": instance_uuid}
-            }
-          ]
-        }
-      }
-
-    }
-    result = es_search.search(
-        body=es_dsl,
-        index='bibframe',
-        doc_type='HeldItem')
-    for hit in result.get('hits', []).get('hits', []):
-        if not 'fields' in hit:
-            continue
-        items.append(hit['fields'])
-        #fields = hit['fields']
-        #items.append({"location": get_label(fields[0]),
-        #              "itemId": fields
-        #              "circulationStatus": fields.get('bf:circulationStatus')})    
-    return items 
 
 @app.template_filter('bf_type')
 def bibframe_type(entity):

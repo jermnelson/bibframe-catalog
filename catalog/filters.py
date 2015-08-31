@@ -26,30 +26,12 @@ from flask import render_template, url_for
 from .forms import BasicSearch
 import sys
 from . import app, datastore_url, es_search
+from .util import lookupRelatedDetails
 
 PREFIX = """PREFIX bf: <http://bibframe.org/vocab/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>"""
-uuidPattern = re.compile('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89aAbB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}')
 
-def lookupRelatedDetails(v):
-    #Test the value => v to see if it is a uuid
-    returnList = []
-    print('Entered lookup: ', v)
-    if isinstance(v, list):
-        for pUuid in v:
-            #print ("pUuid: ",pUuid)   
-            mUuid = uuidPattern.match(pUuid)
-            if mUuid:
-                #if v matches a uuid pattern then search for the item in elasticsearch
-                if es_search.exists(id=pUuid, index='bibframe'):
-                    uuidResult = es_search.get_source(id=pUuid, index='bibframe')
-                    #uuidResult = {'id':pUuid,'result':uuidResult}
-                    returnList.append(uuidResult)
-    if len(returnList) > 0:
-        return returnList
-    else:
-        return 0
 GET_CREATORS_INSTANCE_SPARQL = """{}
 SELECT DISTINCT ?name
 WHERE {{{{
@@ -310,7 +292,7 @@ def guess_name(entity):
     """Name filter attempts to serialize a BIBFRAME entity"""
     name = ''
     if 'bf:titleValue' in entity:
-        print('guess->bf:titleValue--> ', entity['bf:titleValue'],' --> ', entity['bf:titleValue'][0])
+        #print('guess->bf:titleValue--> ', entity['bf:titleValue'],' --> ', entity['bf:titleValue'][0])
         name = entity['bf:titleValue'][0]
         if 'bf:subtitle' in entity:
             name += ','.join(entity.get('bf:subtitle'))
@@ -319,7 +301,7 @@ def guess_name(entity):
     elif 'bf:titleStatement' in entity:
         name = ','.join(entity.get('bf:titleStatement'))
     elif 'bf:workTitle' in entity:
-        print(entity.get('bf:workTitle'))
+        #print(entity.get('bf:workTitle'))
         name = ','.join([guess_name(title) for title in entity.get('bf:workTitle')])
     elif 'bf:label' in entity:
         name = ','.join(entity.get('bf:label'))
@@ -333,18 +315,14 @@ def guess_name(entity):
     elif len(name) < 1:
         if 'fedora:uuid' in entity:
             name = ','.join(entity['fedora:uuid'][0])
-            print('Name of fedora: ',name)
         else:
-            print('entered lookup')
             lookupObj = lookupRelatedDetails([entity])
-            print(lookupObj)
             try:
                 name = lookupObj[0]['bf:titleValue'][0]
             except:
                 pass
             if len(name) < 1:
                 name = entity[0]
-            print('lookup name: ',name)
     return name
 
 def find_creators(entity):

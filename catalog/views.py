@@ -7,79 +7,28 @@ import mimetypes
 import requests
 import logging
 import re
+
+
 from elasticsearch.exceptions import NotFoundError
 from flask import abort, jsonify, render_template, redirect
 from flask import request, session, send_file, url_for
+from flask import stream_with_context, Response
+
+
 from .forms import BasicSearch
 from . import app, datastore_url, es_search, __version__
 from .filters import *
 from .filters import __get_cover_art__, __get_held_items__
+from .util import *
 
+try:
+    from simplepam import authenticate
+except ImportError:
+    def authenticate(user, pwd):
+        return True
 
-	
-def findRelatedItems(filterFld,v):
-    es_dsl = {'rel_instances':{}, 'rel_works':{}, 'rel_agents':{}, 'rel_topics':{}}
-    print(filterFld)
-    if "instances" in filterFld:
-        print("enter Instance DSL")
-        es_dsl['rel_instances'] = {
-                     "query" : {
-                         "filtered" : {
-                             "filter" : {
-                                 "term" : {
-                                    filterFld['instances'] : v
-                                          }
-                                        }
-                                      }
-                                }
-                 }
-    if "works" in filterFld:
-        es_dsl['rel_works'] = {
-                     "query" : {
-                                 "term" : {
-                                    filterFld['works'] : v
-                                          }
-                                }
-                 }
-    if "agents" in filterFld:
-        es_dsl['rel_agents'] = {
-                     "query" : {
-                         "filtered" : {
-                             "filter" : {
-                                 "term" : {
-                                    filterFld['agents'] : v
-                                          }
-                                        }
-                                      }
-                                }
-                 }
-    if "topics" in filterFld:
-        es_dsl['rel_topics'] = {
-                     "query" : {
-                         "filtered" : {
-                             "filter" : {
-                                 "term" : {
-                                    filterFld['topics'] : v
-                                          }
-                                        }
-                                      }
-                                }
-                 }
-    result = {}
-    #print("es_dsl***",es_dsl)
-    for k, dsl in es_dsl.items():
-        #print ("k:",k," dsl:",dsl)
-        if k.replace("rel_","") in filterFld:
-            #print("*** Entered search ***")
-            searchResult = es_search.search(
-                body=dsl, 
-                index='bibframe', 
-                )
-            #print("searchResult*** ", searchResult)
-            result = {k:searchResult['hits']['hits']}
-    #print("rel items *** ",result)
-    return result
-      
+app.url_map.converters['regex'] = RegexConverter
+
 # Test comment
 COVER_ART_SPARQL = """{}
 PREFIX fedora: <http://fedora.info/definitions/v4/repository#>
@@ -88,101 +37,40 @@ WHERE {{{{
    ?cover fedora:uuid "{{}}"^^<http://www.w3.org/2001/XMLSchema#string>
 }}}}""".format(PREFIX)
 
-def __agent_search__(phrase):
-    """Agent search for suggest completion 
 
-    Args:
-        phrase -- text phrase
-    """
-    output = []
-    es_dsl = {
-        "organization-suggest": {
-            "text": phrase,
-                "completion": {
-                    "field": "organization_suggest"
+# Reporting Module Routes
 
-               }
-        },
-       "person-suggest": {
-           "text": phrase,
-                "completion": {
-                    "field": "person_suggest"
-                }
-
-            }
-     }
-    result = es_search.suggest(body=es_dsl, index='bibframe')
-    for suggest_type in [ "person-suggest", 'organization-suggest']:
-        for hit in result.get(suggest_type)[0]['options']:
-            row = {'agent': hit['text'], 
-                   'uuid':  hit['payload']['id']}
-            output.append(row)
-    return json.dumps(output)
+@app.route('/reports/<regex("(.*)"):url>')
+def kibana(url=None):
+    if not 'username' in session:
+        raise abort(403)
+    kibana_url = app.config.get('KIBANA_URL')
+    if not kibana_url.startswith("http"):
+        kibana_url = 'http://' + kibana_url
+    url = "{}/{}".format(kibana_url, url)
+    req = requests.get(url, stream=True)
+    return Response(
+        stream_with_context(
+            req.iter_content()), content_type = req.headers['content-type'])
 
 
-def __expand_instance__(instance):
-    """Helper function takes a search result Instance, queries index for 
-    creator and holdings information 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if authenticate(str(username), str(password)):
+            session['username'] = request.form['username']
+            return redirect(url_for('index'))
+        else:
+            return 'Invalid username/password'
+    else:
+         return render_template("login.html")
 
-    Args:
-        instance -- Elastic search hit result
-    """
-    output = dict()
-    work_id = instance.get('bf:instanceOf')
-    if not work_id:
-        return {}
-    try:
-        work = es_search.get(
-            id=work_id[0],  
-            index='bibframe', 
-            fields=['bf:creator', 
-                    'bf:subject'])
-    except NotFoundError:
-        #! Should preform secondary ES search on work_id
-        return {}
-    
-    if not work.get('found'):
-        return {}
-    creators = str()
-    for creator_id in work.get('fields', {}).get('bf:creator', []):
-        creator = es_search.get(
-            id=creator_id, 
-            index='bibframe', 
-            fields=['bf:label'])
-        if creator.get('found'):
-            creators += ' '.join(creator.get('fields', 
-                                 {}).get('bf:label'))
-    if len(creators) > 0:
-        output['creators'] = creators
-    cover_art = __get_cover_art__(instance.get('fedora:uuid')[0])
-    if cover_art:
-        output['cover'] = cover_art
-    items = __get_held_items__(instance.get('fedora:uuid')[0])
-    output['held_items'] = []
-    if len(items) > 0:
-        for row in items:
-            item = dict()
-            for field, value in row.items():
-                item[field.split(":")[1]] = value
-            if not 'circulationStatus' in item:
-                item['circulationStatus'] = 'Available'
-            for key in ['shelfMarkLcc', 'heldBy', 'subLocation']:
-                if not key in item:
-                    item[key] = None 
-            output['held_items'].append(item)
-    return output
-
-def __generate_sort__(sort, doc_type):
-    """Generates sort DSL based on type of sort and the doc_type"""
-    output = {}
-    if sort.startswith("a-z"):
-        order = "asc"
-    elif sort.startswith("z-a"):
-        order = "desc"
-    #! Need routing for Category?
-    output["bf:label"] = {"order": order}
-    return output
-    
+@app.route("/logout")
+def logout():
+    session.pop('username')
+    return redirect(url_for('index'))
 
 @app.route('/search', methods=['POST', 'GET'])
 def search():
@@ -250,7 +138,7 @@ def search():
             "url": "{}/{}".format(hit['_type'], hit['_id'])}
         item.update(__expand_instance__(hit['_source']))
         results.append(item)
-    print(results)
+    #print(results)
     return jsonify(
         {"hits": results, 
          "from": from_ + size,
@@ -319,7 +207,7 @@ def detail_redirect(uuid, ext):
                         ext=ext))
     abort(404)
 
-@app.route("/<entity>/<uuid>.<ext>")
+#@app.route("/<entity>/<uuid>.<ext>")
 @app.route("/<entity>/<uuid>")
 @app.route("/<entity>/<uuid>.json")
 def detail(uuid, entity="Work", ext="html"):
@@ -347,16 +235,16 @@ def itemDetails():
         resource = dict()
     result = es_search.get(id=uuid, index='bibframe')
     for k, v in result['_source'].items():
-        print(k," : ",v," --> ",type(v))
+        #print(k," : ",v," --> ",type(v))
         itemLookup = lookupRelatedDetails(v)
         if itemLookup:
             result['_source'][k] = {'uuid':result['_source'][k],'lookup':itemLookup}
     if doc_type == 'Work':
-        print("*** work Type")
+        #print("*** work Type")
         lookupFlds = {'instances':'bf:instanceOf'}
         relItems = findRelatedItems(lookupFlds, uuid)
     if doc_type == 'Person':
-        print("*** Person Type")
+        #print("*** Person Type")
         lookupFlds = {'works':'bf:contributor'}
         relItems = findRelatedItems(lookupFlds, uuid)
     if doc_type == 'Topic':

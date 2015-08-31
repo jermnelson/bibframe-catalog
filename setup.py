@@ -31,7 +31,3 @@ setup(
         'elasticsearch',
         'rdflib']
 )
-
-
-
-

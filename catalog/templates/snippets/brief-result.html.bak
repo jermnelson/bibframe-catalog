@@ -4,8 +4,7 @@
 		<li class="media" itemscope> 
 			<h3 class="media-heading bibcat-title"> 
 				<a class="bibcat-title" data-bind="attr: { 'href': url }">
-					<!--<span class='bcSearchItemType' data-bind="testNullObj: [$data,['iType']]"></span>-->
-					<span data-bind="html: title"></span> / <span data-bind="text: author"></span> 
+					<span class='bcSearchItemType' data-bind="testNullObj: [$data,['iType']]"></span><span data-bind="text: title"></span> / <span data-bind="text: author"></span> 
 				</a>
 			</h3>
 		<div class="media-left">

@@ -189,7 +189,7 @@ def search():
     """Search view for the application"""
     search_type = request.form.get('search_type', 'kw')
     phrase = request.form.get('phrase')
-    size = int(request.form.get('size', 20))
+    size = int(request.form.get('size', 5))
     from_ = int(request.form.get('from'))
     filter_ = request.form.get('filter', 'All').lower()
     sort = request.form.get('sort', 'Relevance').lower()

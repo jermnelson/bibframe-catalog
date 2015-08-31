@@ -25,7 +25,7 @@ function CatalogViewModel() {
 	self.queryPhraseForResults = ko.observable()
 	self.errorMsg = ko.observable("");
 	self.searchResults = ko.observableArray();
-	self.shardSize = ko.observable(20);
+	self.shardSize = ko.observable(8);
 	self.totalResults = ko.observable(0);
 	self.csrf_token = $('#csrf_token').val();
 	self.search_url = $('#search-url').val();

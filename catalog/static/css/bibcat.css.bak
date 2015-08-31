@@ -239,9 +239,3 @@ div[class^='tt-dataset']:hover .bg-info{
 .viewInstances td, th {
 	border: 1px solid black;
 }
-.bcSearchItemType {
-	color: green;
-	font-style:italic;
-	font-size: smaller;
-	padding-right: 10px;
-}

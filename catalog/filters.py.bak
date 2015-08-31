@@ -356,12 +356,6 @@ def find_creators(entity):
             name = lookupObj[0]['bf:authorizedAccessPoint'][0]
         except:
             pass
-    if 'bf:creator' in entity:
-        lookupObj = lookupRelatedDetails(entity[bf:creator])
-        try:
-            name = lookupObj[0]['bf:authorizedAccessPoint'][0]
-        except:
-            pass
     return name
     
 @app.template_filter('title_author')

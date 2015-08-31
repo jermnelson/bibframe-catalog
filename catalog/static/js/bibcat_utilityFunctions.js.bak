@@ -12,10 +12,10 @@ function isNotNull (variable) {
 
 function readObj (obj, objNameArray) {
 	var testObj = obj;
-	for(var i=0;i<objNameArray.length;i++) {
+	for(var i=0;i<objNameArray.length;i++)
 		testObj = testObj[objNameArray[i]];
 		if (!(isNotNull(testObj))) {
-		 return false;
+		 //return false;
 		}
 	}
 	return testObj;

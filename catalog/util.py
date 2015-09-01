@@ -37,7 +37,6 @@ def findRelatedItems(filterFld,v):
     es_dsl = {'rel_instances':{}, 'rel_works':{}, 'rel_agents':{}, 'rel_topics':{}}
     #print(filterFld)
     if "instances" in filterFld:
-        print("enter Instance DSL")
         es_dsl['rel_instances'] = {
                      "query" : {
                          "filtered" : {

@@ -27,6 +27,7 @@ from .forms import BasicSearch
 import sys
 from . import app, datastore_url, es_search
 from .util import *
+from .util import __get_cover_art__, __get_held_items__
 
 PREFIX = """PREFIX bf: <http://bibframe.org/vocab/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>

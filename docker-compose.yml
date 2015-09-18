@@ -1,9 +1,21 @@
-web:
+catalog:
   build: .
   links:
-   - bf_datastore
+   - bf_search
+   - semantic_server
   ports:
-   - "22:22"
    - "80:80"
-bf_datastore:
-  image: bfDatastore
+bf_search:
+  image: jermnelson/bibframe-search:dev
+  ports:
+   - "9200:9200"
+   - "9300:9300"
+  volumes:
+   - /opt/elasticsearch/data:/usr/share/elasticsearch/data 
+semantic_server:
+  image: jermnelson/semantic-server-core:dev
+  ports:
+   - "8080:8080"
+  volumes:
+   - /opt/semantic_server/fcrepo4-data:/usr/share/fcrepo4-data
+   - /opt/semantic_server/blazegraph:/usr/share/blazegraph
